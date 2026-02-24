@@ -16,20 +16,24 @@ import * as vscode from 'vscode';
 import { MessageHandler, ParsedMessage } from './MessageHandler';
 import { StudentContextManager, StudentContext } from './StudentContextManager';
 import { PromptBuilder } from './PromptBuilder';
+import { ResponseFormatter } from './ResponseFormatter';
 
 export class ChatParticipantProvider {
     private messageHandler: MessageHandler;
     private contextManager: StudentContextManager;
     private promptBuilder: PromptBuilder;
+    private responseFormatter: ResponseFormatter;
 
     constructor(
         messageHandler: MessageHandler,
         contextManager: StudentContextManager,
-        promptBuilder: PromptBuilder
+        promptBuilder: PromptBuilder,
+        responseFormatter: ResponseFormatter
     ) {
         this.messageHandler = messageHandler;
         this.contextManager = contextManager;
         this.promptBuilder = promptBuilder;
+        this.responseFormatter = responseFormatter;
     }
 
     /**
@@ -250,10 +254,10 @@ export class ChatParticipantProvider {
      * 4. Return response
      */
     private generateResponse(parsed: ParsedMessage, context: StudentContext): string {
-        // Build the prompt using PromptBuilder (WP3)
+        // Builds the prompt using PromptBuilder
         const builtPrompt = this.promptBuilder.buildPrompt(parsed, context);
 
-        // Validate safety (double-check even though we checked earlier)
+        // Validates safety (double-check even though we checked earlier)
         const safetyCheck = this.promptBuilder.validateSafety(
             builtPrompt.systemPrompt + builtPrompt.userPrompt,
             parsed
@@ -271,6 +275,8 @@ export class ChatParticipantProvider {
     /**
      * Placeholder response generator until GitHub Copilot is integrated
      * Shows that prompt is being built with appropriate context
+     *
+     * WP4 Integration: Now formats responses using ResponseFormatter
      */
     private generatePlaceholderResponse(
         parsed: ParsedMessage,
@@ -279,23 +285,38 @@ export class ChatParticipantProvider {
     ): string {
         const prefix = `[Prompt built: ${tokenCount} tokens, ${context.learningLevel} level]`;
 
+        let rawResponse: string;
+
         // Handle code-related questions
         if (parsed.codeBlocks && parsed.codeBlocks.length > 0) {
             const languages = parsed.detectedLanguages.join(', ');
-            return `${prefix}\n\n${this.generateCodeResponse(parsed.questionType, languages, context.learningLevel)}`;
+            rawResponse = `${prefix}\n\n${this.generateCodeResponse(parsed.questionType, languages, context.learningLevel)}`;
+        }
+        // Handle by question type
+        else {
+            switch (parsed.questionType) {
+                case 'debugging':
+                    rawResponse = `${prefix}\n\n${this.generateDebuggingResponse(context.learningLevel)}`;
+                    break;
+                case 'explanation':
+                    rawResponse = `${prefix}\n\n${this.generateExplanationResponse(context.learningLevel)}`;
+                    break;
+                case 'concept':
+                    rawResponse = `${prefix}\n\n${this.generateConceptResponse(context.learningLevel)}`;
+                    break;
+                default:
+                    rawResponse = `${prefix}\n\n${this.generateGeneralResponse(context.learningLevel)}`;
+            }
         }
 
-        // Handle by question type
-        switch (parsed.questionType) {
-            case 'debugging':
-                return `${prefix}\n\n${this.generateDebuggingResponse(context.learningLevel)}`;
-            case 'explanation':
-                return `${prefix}\n\n${this.generateExplanationResponse(context.learningLevel)}`;
-            case 'concept':
-                return `${prefix}\n\n${this.generateConceptResponse(context.learningLevel)}`;
-            default:
-                return `${prefix}\n\n${this.generateGeneralResponse(context.learningLevel)}`;
-        }
+        // WP4: Format the response for clarity and accessibility
+        // Once ResponseFormatter is implemented (T036-T042), this will:
+        // - Fix markdown issues
+        // - Format code blocks properly
+        // - Add educational labels
+        // - Normalize headings
+        // - Validate accessibility
+        return this.responseFormatter.formatResponse(rawResponse);
     }
 
     /**

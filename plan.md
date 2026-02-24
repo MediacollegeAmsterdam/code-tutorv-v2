@@ -1271,7 +1271,7 @@ class RateLimiter {
 
 ### 4.6 ResponseFormatter
 
-**File**: `src/chat/responseFormatter.ts`
+**File**: `src/chat/ResponseFormatter.ts`
 
 **Purpose**: Format AI responses for VS Code chat UI; ensure accessibility.
 
@@ -2100,7 +2100,7 @@ code-tutorv-v2/
 │  │  ├─ messageHandler.ts            ← Input parsing
 │  │  ├─ studentContextManager.ts     ← Context management
 │  │  ├─ promptBuilder.ts             ← Prompt engineering
-│  │  ├─ responseFormatter.ts         ← Output formatting
+│  │  ├─ ResponseFormatter.ts         ← Output formatting
 │  │  └─ index.ts                     ← Exports
 │  ├─ ai/
 │  │  ├─ aiServiceClient.ts           ← OpenAI integration

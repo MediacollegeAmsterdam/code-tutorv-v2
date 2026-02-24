@@ -745,7 +745,7 @@ Implement response formatting (ResponseFormatter) and accessibility validation (
 
 #### ResponseFormatter Component
 
-- [ ] **T036 [P] [Core]** Implement ResponseFormatter class skeleton in `src/chat/responseFormatter.ts`
+- [ ] **T036 [P] [Core]** Implement ResponseFormatter class skeleton in `src/chat/ResponseFormatter.ts`
   - **Acceptance Criteria**:
     - Class created with: formatResponse(), fixMarkdownIssues(), fixCodeBlocks(), addCodeBlockLabels(), normalizeHeadings(), validateAccessibility()
     - All methods have JSDoc
@@ -758,7 +758,7 @@ Implement response formatting (ResponseFormatter) and accessibility validation (
   - **Educational Consideration**: Response formatting affects learning (clarity matters)
   - **Accessibility**: Formatting is foundation of accessible output
 
-- [ ] **T037 [P] [Core]** Implement ResponseFormatter.formatResponse() in `src/chat/responseFormatter.ts`
+- [ ] **T037 [P] [Core]** Implement ResponseFormatter.formatResponse() in `src/chat/ResponseFormatter.ts`
   - **Acceptance Criteria**:
     - formatResponse(aiResponse) orchestrates all formatting steps
     - Returns well-formatted markdown ready for VS Code chat UI
@@ -775,7 +775,7 @@ Implement response formatting (ResponseFormatter) and accessibility validation (
   - **Educational Consideration**: Formatting ensures clarity for learning
   - **Accessibility**: Validation catches accessibility issues early
 
-- [ ] **T038 [P] [Core]** Implement ResponseFormatter.fixMarkdownIssues() in `src/chat/responseFormatter.ts`
+- [ ] **T038 [P] [Core]** Implement ResponseFormatter.fixMarkdownIssues() in `src/chat/ResponseFormatter.ts`
   - **Acceptance Criteria**:
     - Fixes common markdown formatting issues
     - Adds spaces after headers: `##Text` → `## Text`
@@ -790,7 +790,7 @@ Implement response formatting (ResponseFormatter) and accessibility validation (
   - **Educational Consideration**: Proper formatting aids readability
   - **Accessibility**: Correct markdown structure is required for screen readers
 
-- [ ] **T039 [P] [Core]** Implement ResponseFormatter.fixCodeBlocks() in `src/chat/responseFormatter.ts`
+- [ ] **T039 [P] [Core]** Implement ResponseFormatter.fixCodeBlocks() in `src/chat/ResponseFormatter.ts`
   - **Acceptance Criteria**:
     - Ensures code blocks are properly formatted: \`\`\`language\ncode\n\`\`\`
     - Handles missing language identifier (default to 'plaintext')
@@ -808,7 +808,7 @@ Implement response formatting (ResponseFormatter) and accessibility validation (
   - **Educational Consideration**: Proper code formatting is crucial for understanding
   - **Accessibility**: Language identifier helps AI explain code appropriately
 
-- [ ] **T040 [P] [Core]** Implement ResponseFormatter.addCodeBlockLabels() in `src/chat/responseFormatter.ts`
+- [ ] **T040 [P] [Core]** Implement ResponseFormatter.addCodeBlockLabels() in `src/chat/ResponseFormatter.ts`
   - **Acceptance Criteria**:
     - Adds labels above each code block: "Example code (javascript):" or "Example code:"
     - Labels are clear and educational ("Example", not "Code")
@@ -824,7 +824,7 @@ Implement response formatting (ResponseFormatter) and accessibility validation (
   - **Educational Consideration**: Clear labels help students understand examples vs. solutions
   - **Accessibility**: Labels are announced by screen readers
 
-- [ ] **T041 [P] [Core]** Implement ResponseFormatter.normalizeHeadings() in `src/chat/responseFormatter.ts`
+- [ ] **T041 [P] [Core]** Implement ResponseFormatter.normalizeHeadings() in `src/chat/ResponseFormatter.ts`
   - **Acceptance Criteria**:
     - Ensures heading hierarchy is correct (no skipping levels, max 6 levels)
     - Adjusts heading levels as needed
@@ -840,7 +840,7 @@ Implement response formatting (ResponseFormatter) and accessibility validation (
   - **Educational Consideration**: Proper heading structure helps navigation
   - **Accessibility**: Heading hierarchy is critical for screen reader navigation
 
-- [ ] **T042 [P] [Core]** Implement ResponseFormatter.validateAccessibility() in `src/chat/responseFormatter.ts`
+- [ ] **T042 [P] [Core]** Implement ResponseFormatter.validateAccessibility() in `src/chat/ResponseFormatter.ts`
   - **Acceptance Criteria**:
     - Validates response for common accessibility issues
     - Checks for color-only meaning (warns)
@@ -1079,7 +1079,7 @@ Set up testing infrastructure, write unit tests for all components, ensure 80% c
 
 - [ ] **T057 [P]** Achieve 80% line coverage across all WP4 components (Target: Week 6)
   - **Acceptance Criteria**:
-    - `npm test -- --coverage` reports 80%+ coverage for: responseFormatter.ts, accessibilityHandler.ts
+    - `npm test -- --coverage` reports 80%+ coverage for: ResponseFormatter.ts, accessibilityHandler.ts
     - All formatting and accessibility checks covered
   - **Effort**: Distributed across T043, T051
   - **Dependencies**: T043, T051 (unit tests)
@@ -1834,7 +1834,7 @@ code-tutorv-v2/
 │  │  ├─ accessibilityHandler.test.ts (T051)
 │  │  ├─ accessibility.test.ts        (T059)
 │  ├─ chat/
-│  │  ├─ responseFormatter.ts         (T036-T043)
+│  │  ├─ ResponseFormatter.ts         (T036-T043)
 │
 ├─ docs/
 │  ├─ SETUP.md                        (T006)

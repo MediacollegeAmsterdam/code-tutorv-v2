@@ -3,6 +3,7 @@ import { ConversationStorage } from './storage/ConversationStorage';
 import { StudentContextManager } from './services/StudentContextManager';
 import { MessageHandler } from './services/MessageHandler';
 import { PromptBuilder } from './services/PromptBuilder';
+import { ResponseFormatter } from './services/ResponseFormatter';
 import { ChatParticipantProvider } from './services/chatParticipantProvider';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -13,10 +14,12 @@ export function activate(context: vscode.ExtensionContext) {
     const contextManager = new StudentContextManager(context, storage);
     const messageHandler = new MessageHandler();
     const promptBuilder = new PromptBuilder();
+    const responseFormatter = new ResponseFormatter();
     const chatProvider = new ChatParticipantProvider(
         messageHandler,
         contextManager,
-        promptBuilder
+        promptBuilder,
+        responseFormatter
     );
 
     // Activate chat participant
