@@ -54,3 +54,7 @@ jspm_packages/
 # Dev environment
 /.idea/
 /code-tutor-v2/node_modules/
+/.specify/
+/docs/
+/.github/
+/dist/

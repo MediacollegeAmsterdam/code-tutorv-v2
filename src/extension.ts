@@ -1,26 +1,31 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { ConversationStorage } from './storage/ConversationStorage';
+import { StudentContextManager } from './services/StudentContextManager';
+import { MessageHandler } from './services/MessageHandler';
+import { PromptBuilder } from './services/PromptBuilder';
+import { ChatParticipantProvider } from './services/chatParticipantProvider';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
+    console.log('code-tutor-v2 is now active!');
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "code-tutor-v2" is now active!');
+    // Initialize core components
+    const storage = new ConversationStorage(context);
+    const contextManager = new StudentContextManager(context, storage);
+    const messageHandler = new MessageHandler();
+    const promptBuilder = new PromptBuilder();
+    const chatProvider = new ChatParticipantProvider(
+        messageHandler,
+        contextManager,
+        promptBuilder
+    );
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('code-tutor-v2.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from code-tutor-v2!');
-	});
+    // Activate chat participant
+    chatProvider.activate(context);
 
-	context.subscriptions.push(disposable);
+    console.log('code-tutor-v2 chat participant registered');
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() {
+    console.log('code-tutor-v2 is now deactivated');
+}
