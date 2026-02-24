@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-
+import { AccessibilityHandler } from "./AccessibilityHandler";
 
 export interface FormattedResponde {
     content: string;
@@ -9,8 +9,16 @@ export interface FormattedResponde {
 
 /**
  * ResponseFormatter - Formats and validates AI responses
+ *
+ * Now includes optional AccessibilityHandler integration for
+ * comprehensive WCAG 2.1 AA validation (T044+)
  */
 export class ResponseFormatter {
+    private accessibilityHandler?: AccessibilityHandler;
+
+    constructor(accessibilityHandler?: AccessibilityHandler) {
+        this.accessibilityHandler = accessibilityHandler;
+    }
 
     public formatResponse(aiResponse: string): string {
         let formatted = aiResponse;
@@ -20,6 +28,14 @@ export class ResponseFormatter {
         formatted = this.normalizeHeadings(formatted);
 
         this.validateAccessibility(formatted);
+
+        // Optional: Use AccessibilityHandler for enhanced validation (T044-T049)
+        if (this.accessibilityHandler) {
+            const report = this.accessibilityHandler.generateReport(formatted);
+            if (report.warnings.length > 0) {
+                console.log('Accessibility warnings:', report.warnings);
+            }
+        }
 
         return formatted;
     }
