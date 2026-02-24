@@ -77,13 +77,22 @@ export class ResponseFormatter {
     }
 
     public normalizeHeadings(markdown: string): string {
-        // Tracks heading levels to ensure hierarchy
+        // Tracks heading levels to ensure no level is skipped.
+        // The first heading in a response may be at any level (e.g. h2 is fine).
         let currentLevel = 0;
 
         return markdown.replace(
             /^(#{1,6})\s+(.*)$/gm,
             (match, hashes, text) => {
                 const proposedLevel = hashes.length;
+
+                if (currentLevel === 0) {
+                    // First heading – accept whatever level it is
+                    currentLevel = proposedLevel;
+                    return match;
+                }
+
+                // Subsequent headings: allow going down freely, but cap jumps up to +1
                 const maxAllowed = Math.min(currentLevel + 1, 6);
                 const actualLevel = Math.min(proposedLevel, maxAllowed);
 

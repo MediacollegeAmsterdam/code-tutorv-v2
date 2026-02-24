@@ -30,6 +30,8 @@ import { ChatParticipantProvider } from '../../services/chatParticipantProvider'
 import { MessageHandler } from '../../services/MessageHandler';
 import { StudentContextManager } from '../../services/StudentContextManager';
 import { ConversationStorage } from '../../storage/ConversationStorage';
+import { PromptBuilder } from '../../services/PromptBuilder';
+import { ResponseFormatter } from '../../services/ResponseFormatter';
 
 // Mock VS Code API
 const mockGlobalState = new Map<string, any>();
@@ -52,6 +54,8 @@ describe('ChatParticipantProvider', () => {
     let messageHandler: MessageHandler;
     let contextManager: StudentContextManager;
     let storage: ConversationStorage;
+    let promptBuilder: PromptBuilder;
+    let responseFormatter: ResponseFormatter;
 
     beforeEach(() => {
         mockGlobalState.clear();
@@ -60,7 +64,9 @@ describe('ChatParticipantProvider', () => {
         storage = new ConversationStorage(mockContext);
         contextManager = new StudentContextManager(mockContext, storage);
         messageHandler = new MessageHandler();
-        provider = new ChatParticipantProvider(messageHandler, contextManager);
+        promptBuilder = new PromptBuilder();
+        responseFormatter = new ResponseFormatter();
+        provider = new ChatParticipantProvider(messageHandler, contextManager, promptBuilder, responseFormatter);
     });
 
     describe('T009: Constructor and initialization', () => {
