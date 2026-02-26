@@ -66,7 +66,7 @@ describe('ChatParticipantProvider', () => {
         messageHandler = new MessageHandler();
         promptBuilder = new PromptBuilder();
         responseFormatter = new ResponseFormatter();
-        provider = new ChatParticipantProvider(messageHandler, contextManager, promptBuilder, responseFormatter);
+        provider = new ChatParticipantProvider(messageHandler, contextManager, promptBuilder, responseFormatter, mockContext);
     });
 
     describe('T009: Constructor and initialization', () => {

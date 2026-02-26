@@ -29,6 +29,9 @@ module.exports = {
     },
   },
 
+  // Output test coverage in multiple formats for CI and local review (T054)
+  coverageReporters: ['text', 'lcov', 'clover', 'json', 'html'],
+
   // TypeScript compilation settings
   globals: {
     'ts-jest': {
@@ -39,6 +42,9 @@ module.exports = {
       },
     },
   },
+
+  // Global test setup for all test suites (T052)
+  setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
 
   // Paths for module resolution
   moduleNameMapper: {
@@ -52,4 +58,3 @@ module.exports = {
   // Verbose output for CI/CD pipelines
   verbose: true,
 };
-

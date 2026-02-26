@@ -24,7 +24,8 @@ export function activate(context: vscode.ExtensionContext) {
         messageHandler,
         contextManager,
         promptBuilder,
-        responseFormatter
+        responseFormatter,
+        context
     );
 
     // Activate chat participant

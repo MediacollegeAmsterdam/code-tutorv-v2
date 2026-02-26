@@ -17,23 +17,27 @@ import { MessageHandler, ParsedMessage } from './MessageHandler';
 import { StudentContextManager, StudentContext } from './StudentContextManager';
 import { PromptBuilder } from './PromptBuilder';
 import { ResponseFormatter } from './ResponseFormatter';
+import { CopilotClient } from './CopilotClient';
 
 export class ChatParticipantProvider {
     private messageHandler: MessageHandler;
     private contextManager: StudentContextManager;
     private promptBuilder: PromptBuilder;
     private responseFormatter: ResponseFormatter;
+    private copilotClient: CopilotClient;
 
     constructor(
         messageHandler: MessageHandler,
         contextManager: StudentContextManager,
         promptBuilder: PromptBuilder,
-        responseFormatter: ResponseFormatter
+        responseFormatter: ResponseFormatter,
+        context: vscode.ExtensionContext
     ) {
         this.messageHandler = messageHandler;
         this.contextManager = contextManager;
         this.promptBuilder = promptBuilder;
         this.responseFormatter = responseFormatter;
+        this.copilotClient = new CopilotClient(context);
     }
 
     /**
@@ -388,5 +392,12 @@ export class ChatParticipantProvider {
         } else {
             return "I'm here to help you deepen your understanding! What would you like to discuss?";
         }
+    }
+
+    /**
+     * Example usage of CopilotClient (T055)
+     */
+    private async getCopilotResponse(prompt: string): Promise<string> {
+        return this.copilotClient.sendPrompt(prompt);
     }
 }
