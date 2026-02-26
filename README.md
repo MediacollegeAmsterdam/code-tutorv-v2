@@ -1,71 +1,58 @@
-# code-tutor-v2 README
+# code-tutor-v2
 
-This is the README for your extension "code-tutor-v2". After writing up a brief description, we recommend including the following sections.
+AI Chat Participant for VS Code - Help students learn to code.
 
-## Features
+## Quick Start
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+```bash
+npm install
+npm run compile
+npm run watch
+```
 
-For example if there is an image subfolder under your extension project workspace:
+## Project Structure
 
-\!\[feature X\]\(images/feature-x.png\)
+```
+src/
+├── services/        # ChatParticipantProvider, MessageHandler, PromptBuilder
+├── models/          # TypeScript interfaces (StudentContext, Message)
+├── storage/         # ConversationStorage
+├── accessibility/   # Accessibility handlers
+├── utils/           # Helper utilities
+├── __tests__/       # Unit and integration tests
+└── extension.ts     # Extension entry point
+```
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+## Development
 
-## Requirements
+- **Compile**: `npm run compile`
+- **Watch**: `npm run watch`
+- **Test**: `npm test`
+- **Lint**: `npm run lint`
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+## Documentation
 
-## Extension Settings
+- **Constitution**: `.specify/memory/constitution.md`
+- **Quick Reference**: `.specify/CONSTITUTION-QUICK-REF.md`
+- **Feature Spec**: `specs/001-chat-participant/spec.md`
+- **Implementation Plan**: `plan.md`
+- **Tasks**: `tasks.md`
+- **Setup**: `docs/GITHUB_COPILOT_SETUP.md`
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+## Architecture
 
-For example:
+code-tutor-v2 consists of 8 core components:
 
-This extension contributes the following settings:
+1. **ChatParticipantProvider** - Registers with VS Code chat
+2. **MessageHandler** - Parses user input, detects concerns
+3. **StudentContextManager** - Tracks learning level
+4. **PromptBuilder** - Creates educational prompts
+5. **CopilotClient** - Integrates with GitHub Copilot
+6. **ResponseFormatter** - Formats responses (markdown, accessibility)
+7. **AccessibilityHandler** - WCAG 2.1 AA compliance
+8. **ConversationStorage** - Persists conversations locally
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+## License
 
-## Known Issues
+See LICENSE file
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
