@@ -56,5 +56,6 @@ jspm_packages/
 /code-tutor-v2/node_modules/
 /.specify/
 /docs/
-/.github/
 /dist/
+/.github/agents/
+/.github/prompts/
