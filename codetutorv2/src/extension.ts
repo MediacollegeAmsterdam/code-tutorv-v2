@@ -29,7 +29,6 @@ export function activate(context: vscode.ExtensionContext) {
 
         broadcastSSEUpdate: (data: any) => {
             console.log('Broadcasting update:', data);
-            // Implement your SSE broadcasting logic
         },
 
         getOrCreateStudentId: () => {
