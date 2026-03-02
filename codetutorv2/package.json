@@ -1,10 +1,10 @@
 {
   "name": "codetutorv2",
-  "displayName": "code-tutor-v2",
-  "description": "bleghhhh",
+  "displayName": "Code Tutor V2",
+  "description": "An AI-powered programming tutor for VS Code that provides progressive feedback, explanations, and exercises",
   "version": "0.0.1",
-  "main": "index.ts",
-  "types": "index.ts",
+  "publisher": "your-publisher-name",
+  "main": "./dist/extension.js",
   "keywords": [
     "vscode",
     "extension",
@@ -20,12 +20,41 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onLanguage:javascript",
+    "onLanguage:typescript",
+    "onLanguage:python",
+    "onLanguage:java",
+    "onLanguage:csharp",
+    "onLanguage:cpp",
+    "onLanguage:c",
+    "onLanguage:go",
+    "onLanguage:rust",
+    "onLanguage:php",
+    "onLanguage:ruby"
+  ],
   "contributes": {
-    "commands": [
+    "chatParticipants": [
       {
-        "command": "codetutorv2.helloWorld",
-        "title": "Hello World"
+        "id": "codetutorv2.tutor",
+        "name": "tutor",
+        "fullName": "Code Tutor",
+        "description": "An AI-powered programming tutor that helps students learn to code with progressive feedback and interactive exercises",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "explain",
+            "description": "Explain code concepts or syntax with year-level appropriate explanations"
+          },
+          {
+            "name": "feedback",
+            "description": "Get progressive feedback on your code using the Socratic method"
+          },
+          {
+            "name": "exercise",
+            "description": "Generate or list programming exercises tailored to your level"
+          }
+        ]
       }
     ]
   },

@@ -1,55 +1,25 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
-import * as fs from 'fs';
 import { ICommand } from '../core/ICommand';
 import { ChatContext } from '../core/ChatContext';
+import { buildChatMessages, sendChatRequest } from '../core/chat-utils';
 
 /**
- * Exercise Command - Generate or list programming exercises
+ * Exercise Command - Generate or suggest programming exercises
  *
- * Can generate custom exercises using AI or list existing assignments.
+ * Generates custom programming exercises based on user requests using AI.
  *
  * Usage:
  *   Generate: @tutor /exercise Geef me een oefening over loops
- *   List: @tutor /exercise
+ *   Suggest: @tutor /exercise
  *
  * Features:
  *   - AI-powered exercise generation
  *   - Difficulty adaptation based on student year level
- *   - Saves exercises as markdown files with YAML frontmatter
- *   - Lists existing assignments with progress tracking
- *   - Broadcasts updates via SSE for real-time dashboard updates
+ *   - Structured exercises with learning outcomes
+ *   - Hints and tips included
+ *   - Markdown formatted output
  *
- * Generated Exercise Format:
- *   ---
- *   title: Exercise Title
- *   difficulty: beginner|intermediate|advanced
- *   topic: Topic Name
- *   dueDate: YYYY-MM-DD
- *   estimatedTime: minutes
- *   ---
- *
- *   ## Objective
- *   [Exercise objective]
- *
- *   ## Learning Outcomes
- *   - [Outcome 1]
- *   - [Outcome 2]
- *
- *   ## Tasks
- *   ### Task 1: [Title]
- *   [Description]
- *
- *   ## Hints & Tips
- *   - [Hint 1]
- *
- *   ## Resources
- *   - [Resource 1](url)
- *
- *   ## Submission
- *   [Instructions]
- *
- * Priority: P1 (Core learning feature - complex)
+ * Priority: P1 (Core learning feature)
  */
 export class ExerciseCommand implements ICommand {
 	readonly name = 'exercise';
@@ -61,20 +31,21 @@ export class ExerciseCommand implements ICommand {
 		stream: vscode.ChatResponseStream,
 		token: vscode.CancellationToken
 	): Promise<void> {
-		const userQuery = context.request.prompt.toLowerCase();
+		const userQuery = context.request.prompt.toLowerCase().trim();
 
-		// Check if user is asking to generate an assignment
-		const isGenerating = userQuery.includes('geef') || userQuery.includes('maak') ||
+		// Check if user is asking to generate an exercise
+		const isGenerating = userQuery.length > 3 &&
+			(userQuery.includes('geef') || userQuery.includes('maak') ||
 			userQuery.includes('give') || userQuery.includes('create') ||
 			userQuery.includes('generate') || userQuery.includes('oefening') ||
-			userQuery.includes('assignment') || userQuery.includes('exercise');
+			userQuery.includes('assignment') || userQuery.includes('exercise'));
 
-		if (isGenerating && userQuery.length > 5) {
-			// Generate a new assignment based on the user's request
+		if (isGenerating) {
+			// Generate a new exercise based on the user's request
 			await this.generateExercise(context, stream, token);
 		} else {
-			// List existing assignments
-			await this.listExercises(context, stream);
+			// Show exercise suggestions
+			await this.showSuggestions(context, stream, token);
 		}
 	}
 
@@ -87,169 +58,154 @@ export class ExerciseCommand implements ICommand {
 		token: vscode.CancellationToken
 	): Promise<void> {
 		stream.markdown(`## 🎯 Oefening aan het genereren...\n\n`);
-		stream.markdown(`⏳ Ik ben een oefening voor je aan het maken...\n\n`);
-
 		try {
-			const userProfile = context.getUserProfile();
-			const yearLevel = userProfile?.yearLevel || 2;
-			const difficultyMap: Record<number, string> = { 1: 'beginner', 2: 'intermediate', 3: 'advanced', 4: 'advanced' };
-			const difficulty = difficultyMap[yearLevel];
+			const difficulty = this.getDifficultyForYear(context.yearLevel);
+			const difficultyText = this.getDifficultyDescription(context.yearLevel);
 
-			// Generate assignment using AI
-			const assignmentPrompt = `Je bent een expert in het maken van programmeer oefeningen. 
-			
-Maak een compleet assignment in Markdown formaat op basis van dit verzoek: "${context.request.prompt}"
+			// Create base prompt for exercise generation
+			const basePrompt = `Je bent een expert programmeerleraar die geweldige oefeningen maakt voor ${difficultyText} studenten.
 
-BELANGRIJK: Antwoord ALLEEN met het Markdown content. Geen extra tekst.
+Maak een EDUCATIEVE en PRAKTISCHE oefening gebaseerd op: "${context.request.prompt}"
 
-Format (gebruik exact dit format):
----
-title: [Duidelijke titel]
-difficulty: ${difficulty}
-topic: [Topic/onderwerp]
-dueDate: [YYYY-MM-DD, bijv 2026-01-25]
-estimatedTime: [aantal minuten, bijv 45]
----
+Zorg ervoor dat:
+1. De oefening goed aansluit bij het ${difficulty} niveau
+2. De lesdoelen duidelijk zijn
+3. Er zijn concrete stappen om te volgen
+4. Er zijn hints voor als het moeilijk wordt
+5. Relevante resources zijn opgenomen
+6. Het formaat is duidelijk en logisch
 
-## Objective
-[Doel van de oefening]
+Geef het antwoord in Nederlands, gerichte opmaak, en deze structuur:
 
-## Learning Outcomes
-- [Leeruitkomst 1]
-- [Leeruitkomst 2]
-- [Leeruitkomst 3]
+## 📚 [Onderwerp van de oefening]
 
-## Tasks
-### Task 1: [Taaktitel]
-[Taakbeschrijving]
+**Niveau:** ${difficulty.toUpperCase()}  
+**Geschatte tijd:** 45-60 minuten
 
-### Task 2: [Taaktitel]
-[Taakbeschrijving]
+### 🎯 Lesdoelen
+- [Lesdoel 1]
+- [Lesdoel 2]
+- [Lesdoel 3]
 
-## Hints & Tips
-- [Hint 1]
-- [Hint 2]
+### 📖 Context & Inleiding
+[Korte introductie - waarom is dit belangrijk?]
 
-## Resources
-- [Resource 1](url)
-- [Resource 2](url)
+### 🚀 Hoofd Opdracht
+[Wat moet de student gaan doen?]
 
-## Submission
-[Submissie instructies]`;
+### 📋 Stap-voor-stap
+1. **Voorbereiding**: [Wat moet je instellen?]
+2. **Taak 1**: [Eerste kleine stap]
+3. **Taak 2**: [Volgende stap]
+4. **Taak 3**: [Eindtaak]
 
-			const messages = [vscode.LanguageModelChatMessage.User(assignmentPrompt)];
-			let assignmentContent = '';
+### 💡 Hints (Klik uit als je vast zit)
+- **Voor taak 1**: [Hint]
+- **Voor taak 2**: [Hint]
+- **Voor taak 3**: [Hint]
+### 📚 Nuttige Resources
+- [Relevant artikel of documentatie]
+- [Tutorial of voorbeeld]
 
-			for await (const fragment of (await context.model.sendRequest(messages, {}, token)).text) {
-				assignmentContent += fragment;
+### ✅ Klaar om in te dienen?
+- [ ] Alle taken afgemaakt
+- [ ] Code schoon en goed opgemaakt
+- [ ] Getest en werkend`;
+
+			const messages = buildChatMessages(
+				basePrompt,
+				context.chatContext,
+				context.request.prompt,
+				''
+			);
+
+			const response = await sendChatRequest(context.model, messages, token, stream);
+			if (response) {
+				for await (const fragment of response.text) {
+					stream.markdown(fragment);
+				}
+				stream.markdown(`\n\n---\n\n`);
+				stream.markdown(`💡 **Tip:** Vraag me om /feedback als je hulp nodig hebt bij het oplossen!\n`);
 			}
-
-			// Extract metadata and generate filename
-			const metadataMatch = assignmentContent.match(/^---\n([\s\S]*?)\n---/);
-			let title = 'Custom Assignment';
-			let difficulty_val = 'beginner';
-
-			if (metadataMatch) {
-				const metadata = metadataMatch[1];
-				const titleMatch = metadata.match(/title:\s*(.+)/);
-				const diffMatch = metadata.match(/difficulty:\s*(.+)/);
-				if (titleMatch) {
-                    title = titleMatch[1].trim();
-                }
-				if (diffMatch) {
-                    difficulty_val = diffMatch[1].trim();
-                }
-			}
-
-			// Generate filename with timestamp
-			const now = new Date();
-			const dateStr = now.toISOString().split('T')[0];
-			const filename = `${dateStr}_${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.md`;
-			const filepath = path.join(context.extensionContext.extensionPath, 'assignments', filename);
-
-			// Save the assignment file
-			fs.mkdirSync(path.dirname(filepath), { recursive: true });
-			fs.writeFileSync(filepath, assignmentContent);
-
-			stream.markdown(`## 🎯 Oefening Gegenereerd!\n\n`);
-			stream.markdown(`✅ Jouw custom oefening is aangemaakt en verschijnt nu in het dashboard!\n\n`);
-			stream.markdown(`📋 **${title}**\n`);
-			stream.markdown(`- 📊 Niveau: ${difficulty_val}\n`);
-			stream.markdown(`- 📂 Bestand: \`${filename}\`\n\n`);
-
-			// Show the generated assignment content
-			stream.markdown(`---\n\n`);
-			stream.markdown(assignmentContent);
-			stream.markdown(`\n\n---\n\n`);
-
-			stream.markdown(`Ga naar het dashboard om de volledige oefening te bekijken en in te dienen!\n`);
 
 			context.trackProgress('exercise');
-			context.services.broadcastSSEUpdate({ type: 'assignmentGenerated', filename, title });
 		} catch (error) {
-			console.error('Error generating assignment:', error);
+			console.error('Error generating exercise:', error);
 			stream.markdown(`❌ Kon de oefening niet genereren. Probeer het opnieuw.\n`);
 			context.trackProgress('exercise');
 		}
 	}
 
 	/**
-	 * List existing exercises with progress
+	 * Show exercise suggestions and guidance
 	 */
-	private async listExercises(
+	private async showSuggestions(
 		context: ChatContext,
-		stream: vscode.ChatResponseStream
+		stream: vscode.ChatResponseStream,
+		token: vscode.CancellationToken
 	): Promise<void> {
+		stream.markdown(`## 🎯 Oefeningen\n\n`);
+
 		try {
-			// Note: This assumes you have an API endpoint at localhost:51987
-			// You may need to adjust this URL based on your setup
-			const response = await fetch('http://localhost:51987/api/assignments');
-            interface Assignment {
-                id: string;
-                title: string;
-                difficulty: 'beginner' | 'intermediate' | 'advanced';
-                dueDate?: string;
-                estimatedTime?: number;
-            }
+			const basePrompt = `Je bent een programmeerleraar. Geef 3-4 interessante oefening suggesties die goed passen voor ${this.getDifficultyDescription(context.yearLevel)} students.
 
-            // Then in the function:
-            const assignments = await response.json() as Assignment[];
+Maak het leuk en inspirerend. Kort en direct. Gebruik deze format:
 
+### 💪 Suggesties voor jou:
 
-			if (!assignments || assignments.length === 0) {
-				stream.markdown(`## 🎯 Oefeningen\n\n`);
-				stream.markdown(`Er zijn momenteel geen oefeningen beschikbaar.\n\n`);
-				stream.markdown(`💡 *Tip: Vraag me om een oefening, bijv: "Geef me een oefening over loops"*\n`);
-				context.trackProgress('exercise');
-				return;
+**1. [Onderwerp 1]** - [1 zin wat je leert]
+**2. [Onderwerp 2]** - [1 zin wat je leert]
+**3. [Onderwerp 3]** - [1 zin wat je leert]
+**4. [Onderwerp 4]** - [1 zin wat je leert]
+
+💬 Zeg bijvoorbeeld: "Geef me een oefening over loops" en ik maak er één voor je!`;
+
+			const messages = buildChatMessages(
+				basePrompt,
+				context.chatContext,
+				'Geef suggesties voor interessante oefeningen',
+				''
+			);
+
+			const response = await sendChatRequest(context.model, messages, token, stream);
+			if (response) {
+				for await (const fragment of response.text) {
+					stream.markdown(fragment);
+				}
 			}
 
-			const assignmentProgress = context.getAssignmentProgress();
-
-			stream.markdown(`## 🎯 Beschikbare Oefeningen\n\n`);
-
-			assignments.forEach((assignment: any) => {
-				const difficultyEmoji = assignment.difficulty === 'beginner' ? '🌱' :
-					assignment.difficulty === 'intermediate' ? '📈' : '⭐';
-				const dueDate = assignment.dueDate ? ` • 📅 ${assignment.dueDate}` : '';
-				const time = assignment.estimatedTime ? ` • ⏱️ ${assignment.estimatedTime} min` : '';
-
-				// Check if assignment is completed
-				const status = assignmentProgress[assignment.id]?.status;
-				const completionIcon = status === 'completed' ? ' ✅' : status === 'graded' ? ' 🏆' : '';
-
-				stream.markdown(`### ${difficultyEmoji} ${assignment.title}${completionIcon}\n`);
-				stream.markdown(`**${assignment.topic}**${time}${dueDate}\n\n`);
-			});
-
-			stream.markdown(`\n💡 *Vraag om een specifieke oefening, bijv: "Geef me een oefening over variabelen"*\n`);
 			context.trackProgress('exercise');
 		} catch (error) {
-			stream.markdown(`## 🎯 Oefeningen\n\n`);
-			stream.markdown(`Kon oefeningen niet laden. Zorg ervoor dat de server draait.\n\n`);
-			stream.markdown(`Probeer: \`npm run watch\` in de terminal.\n`);
+			console.error('Error showing suggestions:', error);
+			stream.markdown(`❌ Kon suggesties niet laden.\n`);
 			context.trackProgress('exercise');
 		}
+	}
+
+	/**
+	 * Get difficulty level based on year
+	 */
+	private getDifficultyForYear(yearLevel: number): string {
+		const map: Record<number, string> = {
+			1: 'beginner',
+			2: 'intermediate',
+			3: 'advanced',
+			4: 'advanced'
+		};
+		return map[yearLevel] || 'intermediate';
+	}
+
+	/**
+	 * Get difficulty description for year level
+	 */
+	private getDifficultyDescription(yearLevel: number): string {
+		const descriptions: Record<number, string> = {
+			1: 'eerstejaars',
+			2: 'tweedejaars',
+			3: 'derdejaars',
+			4: 'vierdejaars / professionals'
+		};
+		return descriptions[yearLevel] || 'intermediate';
 	}
 }
 

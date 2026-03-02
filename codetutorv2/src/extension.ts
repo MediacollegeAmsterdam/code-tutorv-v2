@@ -78,7 +78,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Step 3: Register chat participant
     const participant = vscode.chat.createChatParticipant(
-        'github-copilot',
+        'codetutorv2.tutor',
         async (
             request: vscode.ChatRequest,
             chatContext: vscode.ChatContext,
@@ -88,8 +88,7 @@ export function activate(context: vscode.ExtensionContext) {
             try {
                 // Get AI model
                 const [model] = await vscode.lm.selectChatModels({
-                    vendor: 'copilot',
-                    family: 'Claude Sonnet 4.6'
+                    vendor: 'copilot'
                 });
 
                 if (!model) {
@@ -107,9 +106,29 @@ export function activate(context: vscode.ExtensionContext) {
                     services
                 );
 
-                // Parse command from request
-                const commandMatch = request.prompt.match(/^\/(\w+)/);
-                const commandName = commandMatch ? commandMatch[1].toLowerCase() : '';
+                // Parse command - first try request.command, then try parsing from prompt
+                let commandName = '';
+
+                // Debug: log what we receive
+                console.log('[Code Tutor] Request:', {
+                    prompt: request.prompt,
+                    command: (request as any).command,
+                    hasCommand: 'command' in request
+                });
+
+                // Check if request has a command property (newer VS Code API)
+                if ('command' in request && request.command) {
+                    commandName = (request.command as string).toLowerCase();
+                    console.log('[Code Tutor] Using request.command:', commandName);
+                } else {
+                    // Fallback: parse from prompt text
+                    const commandMatch = request.prompt.match(/^\/(\w+)/);
+                    commandName = commandMatch ? commandMatch[1].toLowerCase() : '';
+                    console.log('[Code Tutor] Parsed from prompt:', commandName, 'prompt:', request.prompt);
+                }
+
+                console.log('[Code Tutor] Final command name:', commandName);
+                console.log('[Code Tutor] Available commands:', Array.from(commands.keys()));
 
                 // Execute command
                 const command = commands.get(commandName);
@@ -225,4 +244,3 @@ class CustomCommand implements ICommand {
         context.trackProgress('custom');
     }
 }
-
