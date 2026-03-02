@@ -8,6 +8,7 @@ import {
     ExplainCommand,
     FeedbackCommand,
     ExerciseCommand,
+    LevelCommand,
     ChatContext,
     ICommand,
     CommandServices
@@ -64,13 +65,15 @@ export function activate(context: vscode.ExtensionContext) {
     const explainCmd = new ExplainCommand();
     const feedbackCmd = new FeedbackCommand();
     const exerciseCmd = new ExerciseCommand();
+    const levelCmd = new LevelCommand();
 
     commands.set(explainCmd.name, explainCmd);
     commands.set(feedbackCmd.name, feedbackCmd);
     commands.set(exerciseCmd.name, exerciseCmd);
+    commands.set(levelCmd.name, levelCmd);
 
     // Also register aliases
-    [explainCmd, feedbackCmd, exerciseCmd].forEach(cmd => {
+    [explainCmd, feedbackCmd, exerciseCmd, levelCmd].forEach(cmd => {
         if ('aliases' in cmd && cmd.aliases) {
             cmd.aliases.forEach((alias: string) => commands.set(alias, cmd));
         }

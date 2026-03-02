@@ -50,7 +50,7 @@ export class ExerciseCommand implements ICommand {
 	}
 
 	/**
-	 * Generate a new exercise using AI
+	 * Generate a new exercise using AI with example
 	 */
 	private async generateExercise(
 		context: ChatContext,
@@ -62,7 +62,14 @@ export class ExerciseCommand implements ICommand {
 			const difficulty = this.getDifficultyForYear(context.yearLevel);
 			const difficultyText = this.getDifficultyDescription(context.yearLevel);
 
-			// Create base prompt for exercise generation
+			// First: Generate a small code example
+			stream.markdown(`### 💻 Voorbeeld\n\n`);
+			await this.generateExample(context, stream, token, difficulty);
+
+			stream.markdown(`\n\n---\n\n`);
+			stream.markdown(`### 📝 Oefening\n\n`);
+
+			// Second: Generate the full exercise
 			const basePrompt = `Je bent een expert programmeerleraar die geweldige oefeningen maakt voor ${difficultyText} studenten.
 
 Maak een EDUCATIEVE en PRAKTISCHE oefening gebaseerd op: "${context.request.prompt}"
@@ -103,6 +110,7 @@ Geef het antwoord in Nederlands, gerichte opmaak, en deze structuur:
 - **Voor taak 1**: [Hint]
 - **Voor taak 2**: [Hint]
 - **Voor taak 3**: [Hint]
+
 ### 📚 Nuttige Resources
 - [Relevant artikel of documentatie]
 - [Tutorial of voorbeeld]
@@ -133,6 +141,59 @@ Geef het antwoord in Nederlands, gerichte opmaak, en deze structuur:
 			console.error('Error generating exercise:', error);
 			stream.markdown(`❌ Kon de oefening niet genereren. Probeer het opnieuw.\n`);
 			context.trackProgress('exercise');
+		}
+	}
+
+	/**
+	 * Generate a small code example for the exercise topic
+	 */
+	private async generateExample(
+		context: ChatContext,
+		stream: vscode.ChatResponseStream,
+		token: vscode.CancellationToken,
+		difficulty: string
+	): Promise<void> {
+		try {
+			// Extract the topic more carefully
+			let topic = context.request.prompt;
+			// Remove common command words
+			topic = topic.replace(/geef\s+me\s+een\s+oefening\s+over\s+|give\s+me\s+an\s+exercise\s+about\s+|geef\s+een\s+oefening\s+|/gi, '').trim();
+
+			const examplePrompt = `Je bent een programmeerleraar. Genereer nu een KORT werkend code voorbeeld voor ${difficulty} niveau over het onderwerp: "${topic}".
+
+Vereisten:
+- Het voorbeeld is 5-15 regels code
+- Het is compleet en werkend
+- Het demonstreert het concept duidelijk
+- Het heeft Nederlands commentaar
+- Het toont de output/result
+
+Voer nu uit:
+
+\`\`\`javascript
+// [code with Dutch comments]
+\`\`\`
+
+Output:
+\`\`\`
+[result]
+\`\`\``;
+
+			const messages = buildChatMessages(
+				examplePrompt,
+				context.chatContext,
+				topic,
+				''
+			);
+
+			const response = await sendChatRequest(context.model, messages, token, stream);
+			if (response) {
+				for await (const fragment of response.text) {
+					stream.markdown(fragment);
+				}
+			}
+		} catch (error) {
+			console.error('Error generating example:', error);
 		}
 	}
 

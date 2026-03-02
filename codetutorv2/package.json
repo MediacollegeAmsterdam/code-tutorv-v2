@@ -53,6 +53,10 @@
           {
             "name": "exercise",
             "description": "Generate or list programming exercises tailored to your level"
+          },
+          {
+            "name": "level",
+            "description": "Change your difficulty level (1-4 based on your year)"
           }
         ]
       }

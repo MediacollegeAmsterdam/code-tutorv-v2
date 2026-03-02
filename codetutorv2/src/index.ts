@@ -8,6 +8,7 @@
 export { ExplainCommand } from './commands/ExplainCommand';
 export { FeedbackCommand } from './commands/FeedbackCommand';
 export { ExerciseCommand } from './commands/ExerciseCommand';
+export { LevelCommand } from './commands/LevelCommand';
 
 // Core
 export { ICommand } from './core/ICommand';
