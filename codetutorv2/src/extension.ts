@@ -1,26 +1,224 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
+/**
+ *
+ */
+
 import * as vscode from 'vscode';
+import {
+    ExplainCommand,
+    FeedbackCommand,
+    ExerciseCommand,
+    ChatContext,
+    ICommand,
+    CommandServices
+} from './index';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+/**
+ * Example: Register a chat participant with the extracted commands
+ */
 export function activate(context: vscode.ExtensionContext) {
+    // Step 1: Create your services implementation
+    const services: CommandServices = {
+        updateProgress: (command: string) => {
+            console.log(`Command executed: ${command}`);
+            // Implement your progress tracking logic
+            return { command, timestamp: new Date().toISOString() };
+        },
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "codetutorv2" is now active!');
+        broadcastSSEUpdate: (data: any) => {
+            console.log('Broadcasting update:', data);
+            // Implement your SSE broadcasting logic
+        },
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('codetutorv2.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from code-tutor-v2!');
-	});
+        getOrCreateStudentId: () => {
+            // Implement your student ID generation logic
+            let studentId = context.globalState.get<string>('studentId');
+            if (!studentId) {
+                studentId = `student-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                context.globalState.update('studentId', studentId);
+            }
+            return studentId;
+        },
 
-	context.subscriptions.push(disposable);
+        loadStudentData: () => {
+            return context.globalState.get('studentData', {});
+        },
+
+        saveStudentData: (data: Record<string, any>) => {
+            context.globalState.update('studentData', data);
+        },
+
+        loadStudentMetadata: () => {
+            return context.globalState.get('studentMetadata', {});
+        },
+
+        saveStudentMetadata: (data: Record<string, any>) => {
+            context.globalState.update('studentMetadata', data);
+        }
+    };
+
+    // Step 2: Initialize commands
+    const commands: Map<string, ICommand> = new Map();
+
+    const explainCmd = new ExplainCommand();
+    const feedbackCmd = new FeedbackCommand();
+    const exerciseCmd = new ExerciseCommand();
+
+    commands.set(explainCmd.name, explainCmd);
+    commands.set(feedbackCmd.name, feedbackCmd);
+    commands.set(exerciseCmd.name, exerciseCmd);
+
+    // Also register aliases
+    [explainCmd, feedbackCmd, exerciseCmd].forEach(cmd => {
+        if (cmd.aliases) {
+            cmd.aliases.forEach(alias => commands.set(alias, cmd));
+        }
+    });
+
+    // Step 3: Register chat participant
+    const participant = vscode.chat.createChatParticipant(
+        'your-agent-id', // Replace with your agent ID
+        async (
+            request: vscode.ChatRequest,
+            chatContext: vscode.ChatContext,
+            stream: vscode.ChatResponseStream,
+            token: vscode.CancellationToken
+        ): Promise<vscode.ChatResult> => {
+            try {
+                // Get AI model
+                const [model] = await vscode.lm.selectChatModels({
+                    vendor: 'copilot',
+                    family: 'gpt-4o'
+                });
+
+                if (!model) {
+                    stream.markdown('❌ No AI model available. Please install GitHub Copilot.');
+                    return { metadata: { command: 'error' } };
+                }
+
+                // Create chat context
+                const context = await ChatContext.create(
+                    request,
+                    chatContext,
+                    token,
+                    context,
+                    model,
+                    services
+                );
+
+                // Parse command from request
+                const commandMatch = request.prompt.match(/^\/(\w+)/);
+                const commandName = commandMatch ? commandMatch[1].toLowerCase() : '';
+
+                // Execute command
+                const command = commands.get(commandName);
+                if (command) {
+                    await command.execute(context, stream, token);
+                    return { metadata: { command: commandName } };
+                } else {
+                    // Default AI response (no specific command)
+                    stream.markdown(`🤖 I don't recognize that command.\n\n`);
+                    stream.markdown(`Available commands:\n`);
+                    stream.markdown(`- \`/explain\` - Explain code or concepts\n`);
+                    stream.markdown(`- \`/feedback\` - Get progressive feedback on your code\n`);
+                    stream.markdown(`- \`/exercise\` - Generate or list exercises\n`);
+                    return { metadata: { command: 'help' } };
+                }
+            } catch (error) {
+                console.error('Chat participant error:', error);
+                stream.markdown(`❌ An error occurred: ${error instanceof Error ? error.message : String(error)}`);
+                return { metadata: { command: 'error', error: String(error) } };
+            }
+        }
+    );
+
+    // Step 4: Set metadata
+    participant.iconPath = vscode.Uri.file(
+        context.asAbsolutePath('resources/icon.png')
+    );
+
+    // Step 5: Add to subscriptions
+    context.subscriptions.push(participant);
+
+    console.log('✅ Chat participant with extracted features activated!');
 }
 
-// This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() {
+    console.log('Chat participant deactivated');
+}
+
+/**
+ * Example: Using commands programmatically
+ */
+export async function exampleProgrammaticUsage(
+    context: vscode.ExtensionContext,
+    model: vscode.LanguageModelChat,
+    services: CommandServices
+) {
+    // Create a mock request
+    const mockRequest: vscode.ChatRequest = {
+        prompt: 'Explain what a loop is',
+        command: 'explain',
+        references: [],
+        location: vscode.ChatLocation.Panel,
+        attempt: 0,
+        enableCommandDetection: false
+    };
+
+    // Create a mock chat context
+    const mockChatContext: vscode.ChatContext = {
+        history: []
+    };
+
+    // Create a mock stream
+    const mockStream: vscode.ChatResponseStream = {
+        markdown: (text: string) => console.log('[Stream]', text),
+        anchor: (uri: vscode.Uri) => {},
+        button: (command: vscode.Command) => {},
+        progress: (message: string) => {},
+        reference: (resource: vscode.Uri | vscode.Location) => {},
+        push: (part: vscode.ChatResponsePart) => {}
+    };
+
+    // Create cancellation token
+    const token = new vscode.CancellationTokenSource().token;
+
+    // Create chat context
+    const chatContext = await ChatContext.create(
+        mockRequest,
+        mockChatContext,
+        token,
+        context,
+        model,
+        services
+    );
+
+    // Execute explain command
+    const explainCmd = new ExplainCommand();
+    await explainCmd.execute(chatContext, mockStream, token);
+}
+
+/**
+ * Example: Custom command implementation
+ */
+class CustomCommand implements ICommand {
+    readonly name = 'custom';
+    readonly description = 'My custom command';
+    readonly aliases = ['mycommand'];
+
+    async execute(
+        context: ChatContext,
+        stream: vscode.ChatResponseStream,
+        token: vscode.CancellationToken
+    ): Promise<void> {
+        stream.markdown(`## Custom Command\n\n`);
+        stream.markdown(`Student ID: ${context.studentId}\n`);
+        stream.markdown(`Year Level: ${context.yearLevel}\n`);
+
+        if (context.codeContext) {
+            stream.markdown(`\nYou have code selected in ${context.codeContext.language}\n`);
+        }
+
+        context.trackProgress('custom');
+    }
+}
+

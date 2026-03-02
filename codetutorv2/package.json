@@ -3,6 +3,17 @@
   "displayName": "code-tutor-v2",
   "description": "bleghhhh",
   "version": "0.0.1",
+  "main": "index.ts",
+  "types": "index.ts",
+  "keywords": [
+    "vscode",
+    "extension",
+    "education",
+    "ai",
+    "copilot",
+    "chat-participant",
+    "programming-education"
+  ],
   "engines": {
     "vscode": "^1.109.0"
   },
@@ -10,7 +21,6 @@
     "Other"
   ],
   "activationEvents": [],
-  "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
