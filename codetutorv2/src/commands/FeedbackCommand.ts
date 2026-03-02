@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { ICommand } from '../core/ICommand';
-import { ChatContext } from '../core/ChatContext';
+import {ICommand} from '../core/ICommand';
+import {ChatContext} from '../core/ChatContext';
 
 /**
  * Feedback Command - Progressive feedback system for student code
@@ -23,71 +23,75 @@ import { ChatContext } from '../core/ChatContext';
  * Priority: P3 (Important learning feature)
  */
 export class FeedbackCommand implements ICommand {
-	readonly name = 'feedback';
-	readonly description = 'Krijg progressieve feedback op je code';
+    readonly name = 'feedback';
+    readonly description = 'Krijg progressieve feedback op je code';
 
-	private feedbackSessions: Map<string, { attempts: number; lastFeedbackLevel: string; previousFeedback: string[] }> = new Map();
+    private feedbackSessions: Map<string, {
+        attempts: number;
+        lastFeedbackLevel: string;
+        previousFeedback: string[]
+    }> = new Map();
 
-	async execute(
-		context: ChatContext,
-		stream: vscode.ChatResponseStream,
-		token: vscode.CancellationToken
-	): Promise<void> {
-		const ctx = context.codeContext;
-		if (!ctx) {
-			stream.markdown(`Selecteer code in je editor om feedback te krijgen.\n\nGebruik: Selecteer je code, typ \`@tutor /feedback\` en beschrijf je probleem.`);
-			context.trackProgress('feedback');
-			return;
-		}
+    async execute(
+        context: ChatContext,
+        stream: vscode.ChatResponseStream,
+        token: vscode.CancellationToken
+    ): Promise<void> {
+        const ctx = context.codeContext;
+        if (!ctx) {
+            stream.markdown(`Selecteer code in je editor om feedback te krijgen.\n\nGebruik: Selecteer je code, typ \`@tutor /feedback\` en beschrijf je probleem.`);
+            context.trackProgress('feedback');
+            return;
+        }
 
-		const code = ctx.code.replace(/^.*?\`\`\`\w+\n/, '').replace(/\`\`\`$/, '');
-		const feedbackResponse = await this.generateProgressiveFeedback(
-			context.request.prompt,
-			code,
-			ctx.language,
-			context.model,
-			1,
-			undefined,
-			token
-		);
+        const code = ctx.code.replace(/^.*?\`\`\`\w+\n/, '').replace(/\`\`\`$/, '');
+        const feedbackResponse = await this.generateProgressiveFeedback(
+            context.request.prompt,
+            code,
+            ctx.language,
+            context.model,
+            1,
+            undefined,
+            token
+        );
 
-		stream.markdown(feedbackResponse);
-		context.trackProgress('feedback');
-	}
+        stream.markdown(feedbackResponse);
+        context.trackProgress('feedback');
+    }
 
-	/**
-	 * Generate progressive feedback based on attempt number
-	 *
-	 * @param issue - Student's description of the problem
-	 * @param code - The code to provide feedback on
-	 * @param language - Programming language
-	 * @param model - AI model to use
-	 * @param attempt - Attempt number (1-4+)
-	 * @param sessionId - Session tracking ID
-	 * @param token - Cancellation token
-	 */
-	private async generateProgressiveFeedback(
-		issue: string,
-		code: string,
-		language: string,
-		model: vscode.LanguageModelChat,
-		attempt: number = 1,
-		sessionId?: string,
-		token?: vscode.CancellationToken
-	): Promise<string> {
-		const sid = sessionId || `session-${Date.now()}`;
-		let session = this.feedbackSessions.get(sid);
+    /**
+     * Generate progressive feedback based on attempt number
+     *
+     * @param issue - Student's description of the problem
+     * @param code - The code to provide feedback on
+     * @param language - Programming language
+     * @param model - AI model to use
+     * @param attempt - Attempt number (1-4+)
+     * @param sessionId - Session tracking ID
+     * @param token - Cancellation token
+     */
+    private async generateProgressiveFeedback(
+        issue: string,
+        code: string,
+        language: string,
+        model: vscode.LanguageModelChat,
+        attempt: number = 1,
+        sessionId?: string,
+        token?: vscode.CancellationToken
+    ): Promise<string> {
+        const sid = sessionId || `session-${Date.now()}`;
+        let session = this.feedbackSessions.get(sid);
 
-		if (!session) {
-			session = { attempts: 0, lastFeedbackLevel: 'initial', previousFeedback: [] };
-			this.feedbackSessions.set(sid, session);
-		}
+        if (!session) {
+            session = {attempts: 0, lastFeedbackLevel: 'initial', previousFeedback: []};
+            this.feedbackSessions.set(sid, session);
+        }
 
-		session.attempts++;
+        session.attempts++;
 
-		// Level 1: Initial Feedback (Attempt 1)
-		if (session.attempts === 1) {
-			const initialPrompt = `Je bent een programmeer coach. Een student heeft een probleem met hun code.
+        // Level 1: Initial Feedback (Attempt 1)
+        if (session.attempts === 1) {
+            const initialPrompt = `Je bent een programmeer coach. Een student heeft een probleem met hun code.
 
 Probleem: ${issue}
 
@@ -104,26 +108,26 @@ Geef korte, begrijpelijke initiële feedback die:
 
 Spreek als een normale Nederlander, zonder emojis.`;
 
-			const messages = [vscode.LanguageModelChatMessage.User(initialPrompt)];
+            const messages = [vscode.LanguageModelChatMessage.User(initialPrompt)];
 
-			try {
-				const response = await model.sendRequest(messages, {}, token);
-				let fullResponse = '';
-				for await (const fragment of response.text) {
-					fullResponse += fragment;
-				}
+            try {
+                const response = await model.sendRequest(messages, {}, token);
+                let fullResponse = '';
+                for await (const fragment of response.text) {
+                    fullResponse += fragment;
+                }
 
-				session.lastFeedbackLevel = 'initial';
-				session.previousFeedback.push(fullResponse);
-				return fullResponse;
-			} catch (e) {
-				return 'Kon feedback niet genereren. Probeer opnieuw.';
-			}
-		}
+                session.lastFeedbackLevel = 'initial';
+                session.previousFeedback.push(fullResponse);
+                return fullResponse;
+            } catch (e) {
+                return 'Kon feedback niet genereren. Probeer opnieuw.';
+            }
+        }
 
-		// Level 2: Specific Tips (Attempts 2-3)
-		if (session.attempts === 2 || session.attempts === 3) {
-			const tipsPrompt = `Je bent een programmeer coach. Een student snapt hun probleem nog niet.
+        // Level 2: Specific Tips (Attempts 2-3)
+        if (session.attempts === 2 || session.attempts === 3) {
+            const tipsPrompt = `Je bent een programmeer coach. Een student snapt hun probleem nog niet.
 
 Origineel probleem: ${issue}
 
@@ -141,26 +145,26 @@ Geef nu concrete tips:
 
 Spreek als een normale Nederlander, zonder emojis.`;
 
-			const messages = [vscode.LanguageModelChatMessage.User(tipsPrompt)];
+            const messages = [vscode.LanguageModelChatMessage.User(tipsPrompt)];
 
-			try {
-				const response = await model.sendRequest(messages, {}, token);
-				let fullResponse = '';
-				for await (const fragment of response.text) {
-					fullResponse += fragment;
-				}
+            try {
+                const response = await model.sendRequest(messages, {}, token);
+                let fullResponse = '';
+                for await (const fragment of response.text) {
+                    fullResponse += fragment;
+                }
 
-				session.lastFeedbackLevel = 'tips';
-				session.previousFeedback.push(fullResponse);
-				return fullResponse;
-			} catch (e) {
-				return 'Kon tips niet genereren. Probeer opnieuw.';
-			}
-		}
+                session.lastFeedbackLevel = 'tips';
+                session.previousFeedback.push(fullResponse);
+                return fullResponse;
+            } catch (e) {
+                return 'Kon tips niet genereren. Probeer opnieuw.';
+            }
+        }
 
-		// Level 3: Full Example (Attempt 4+)
-		if (session.attempts >= 4) {
-			const examplePrompt = `Je bent een programmeer coach. Een student snapt het nog steeds niet. Nu geven we een volledig voorbeeld.
+        // Level 3: Full Example (Attempt 4+)
+        if (session.attempts >= 4) {
+            const examplePrompt = `Je bent een programmeer coach. Een student snapt het nog steeds niet. Nu geven we een volledig voorbeeld.
 
 Origineel probleem: ${issue}
 
@@ -187,30 +191,30 @@ Format:
 
 Spreek als een normale Nederlander, zonder emojis.`;
 
-			const messages = [vscode.LanguageModelChatMessage.User(examplePrompt)];
+            const messages = [vscode.LanguageModelChatMessage.User(examplePrompt)];
 
-			try {
-				const response = await model.sendRequest(messages, {}, token);
-				let fullResponse = '';
-				for await (const fragment of response.text) {
-					fullResponse += fragment;
-				}
+            try {
+                const response = await model.sendRequest(messages, {}, token);
+                let fullResponse = '';
+                for await (const fragment of response.text) {
+                    fullResponse += fragment;
+                }
 
-				session.lastFeedbackLevel = 'example';
-				session.previousFeedback.push(fullResponse);
+                session.lastFeedbackLevel = 'example';
+                session.previousFeedback.push(fullResponse);
 
-				// Clean up old sessions after 30 seconds
-				setTimeout(() => {
-					this.feedbackSessions.delete(sid);
-				}, 30000);
+                // Clean up old sessions after 30 seconds
+                setTimeout(() => {
+                    this.feedbackSessions.delete(sid);
+                }, 30000);
 
-				return fullResponse;
-			} catch (e) {
-				return 'Kon voorbeeld niet genereren. Probeer opnieuw.';
-			}
-		}
+                return fullResponse;
+            } catch (e) {
+                return 'Kon voorbeeld niet genereren. Probeer opnieuw.';
+            }
+        }
 
-		return 'Vraag opnieuw - ik kan je beter helpen';
-	}
+        return 'Vraag opnieuw - ik kan je beter helpen';
+    }
 }
 

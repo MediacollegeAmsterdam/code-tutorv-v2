@@ -204,7 +204,17 @@ estimatedTime: [aantal minuten, bijv 45]
 			// Note: This assumes you have an API endpoint at localhost:51987
 			// You may need to adjust this URL based on your setup
 			const response = await fetch('http://localhost:51987/api/assignments');
-			const assignments = await response.json();
+            interface Assignment {
+                id: string;
+                title: string;
+                difficulty: 'beginner' | 'intermediate' | 'advanced';
+                dueDate?: string;
+                estimatedTime?: number;
+            }
+
+            // Then in the function:
+            const assignments = await response.json() as Assignment[];
+
 
 			if (!assignments || assignments.length === 0) {
 				stream.markdown(`## 🎯 Oefeningen\n\n`);

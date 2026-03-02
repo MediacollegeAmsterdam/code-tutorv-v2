@@ -1,5 +1,6 @@
 /**
- *
+ * The heart of the Code tutor
+ * @author Interis_MK
  */
 
 import * as vscode from 'vscode';
@@ -11,9 +12,10 @@ import {
     ICommand,
     CommandServices
 } from './index';
+import {ChatResponseFileTree, Uri} from "vscode";
 
 /**
- * Example: Register a chat participant with the extracted commands
+ * Registers a chat participant with commands
  */
 export function activate(context: vscode.ExtensionContext) {
     // Step 1: Create your services implementation
@@ -69,14 +71,14 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Also register aliases
     [explainCmd, feedbackCmd, exerciseCmd].forEach(cmd => {
-        if (cmd.aliases) {
-            cmd.aliases.forEach(alias => commands.set(alias, cmd));
+        if ('aliases' in cmd && cmd.aliases) {
+            cmd.aliases.forEach((alias: string) => commands.set(alias, cmd));
         }
     });
 
     // Step 3: Register chat participant
     const participant = vscode.chat.createChatParticipant(
-        'your-agent-id', // Replace with your agent ID
+        'github-copilot',
         async (
             request: vscode.ChatRequest,
             chatContext: vscode.ChatContext,
@@ -87,7 +89,7 @@ export function activate(context: vscode.ExtensionContext) {
                 // Get AI model
                 const [model] = await vscode.lm.selectChatModels({
                     vendor: 'copilot',
-                    family: 'gpt-4o'
+                    family: 'Claude Sonnet 4.6'
                 });
 
                 if (!model) {
@@ -96,7 +98,7 @@ export function activate(context: vscode.ExtensionContext) {
                 }
 
                 // Create chat context
-                const context = await ChatContext.create(
+                const chatContextInstance = await ChatContext.create(
                     request,
                     chatContext,
                     token,
@@ -112,7 +114,7 @@ export function activate(context: vscode.ExtensionContext) {
                 // Execute command
                 const command = commands.get(commandName);
                 if (command) {
-                    await command.execute(context, stream, token);
+                    await command.execute(chatContextInstance, stream, token);
                     return { metadata: { command: commandName } };
                 } else {
                     // Default AI response (no specific command)
@@ -147,7 +149,7 @@ export function deactivate() {
 }
 
 /**
- * Example: Using commands programmatically
+ * programatically commands usage
  */
 export async function exampleProgrammaticUsage(
     context: vscode.ExtensionContext,
@@ -159,10 +161,11 @@ export async function exampleProgrammaticUsage(
         prompt: 'Explain what a loop is',
         command: 'explain',
         references: [],
-        location: vscode.ChatLocation.Panel,
-        attempt: 0,
-        enableCommandDetection: false
+        toolReferences: [],
+        toolInvocationToken: undefined,
+        model: model
     };
+
 
     // Create a mock chat context
     const mockChatContext: vscode.ChatContext = {
@@ -176,7 +179,8 @@ export async function exampleProgrammaticUsage(
         button: (command: vscode.Command) => {},
         progress: (message: string) => {},
         reference: (resource: vscode.Uri | vscode.Location) => {},
-        push: (part: vscode.ChatResponsePart) => {}
+        push: (part: vscode.ChatResponsePart) => {},
+       filetree(value: ChatResponseFileTree[], baseUri: Uri) {}
     };
 
     // Create cancellation token
