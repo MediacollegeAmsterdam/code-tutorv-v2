@@ -3,7 +3,7 @@
   "displayName": "Code Tutor V2",
   "description": "An AI-powered programming tutor for VS Code that provides progressive feedback, explanations, and exercises",
   "version": "0.0.1",
-  "publisher": "your-publisher-name",
+  "publisher": "Interis_Mk",
   "main": "./dist/extension.js",
   "keywords": [
     "vscode",

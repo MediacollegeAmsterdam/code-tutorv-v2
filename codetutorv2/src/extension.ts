@@ -202,7 +202,7 @@ export async function exampleProgrammaticUsage(
         progress: (message: string) => {},
         reference: (resource: vscode.Uri | vscode.Location) => {},
         push: (part: vscode.ChatResponsePart) => {},
-       filetree(value: ChatResponseFileTree[], baseUri: Uri) {}
+        filetree(value: ChatResponseFileTree[], baseUri: Uri) {}
     };
 
     // Create cancellation token

@@ -64,7 +64,7 @@ export class ExerciseCommand implements ICommand {
 
 			// First: Generate a small code example
 			stream.markdown(`### 💻 Voorbeeld\n\n`);
-			await this.generateExample(context, stream, token, difficulty);
+			await this.generateExample(context, stream, token);
 
 			stream.markdown(`\n\n---\n\n`);
 			stream.markdown(`### 📝 Oefening\n\n`);
@@ -150,33 +150,25 @@ Geef het antwoord in Nederlands, gerichte opmaak, en deze structuur:
 	private async generateExample(
 		context: ChatContext,
 		stream: vscode.ChatResponseStream,
-		token: vscode.CancellationToken,
-		difficulty: string
+		token: vscode.CancellationToken
 	): Promise<void> {
 		try {
 			// Extract the topic more carefully
 			let topic = context.request.prompt;
 			// Remove common command words
-			topic = topic.replace(/geef\s+me\s+een\s+oefening\s+over\s+|give\s+me\s+an\s+exercise\s+about\s+|geef\s+een\s+oefening\s+|/gi, '').trim();
+			topic = topic.replace(/geef\s+me\s+een\s+oefening\s+over\s+|give\s+me\s+an\s+exercise\s+about\s+|geef\s+een\s+oefening\s+over\s+/gi, '').trim();
 
-			const examplePrompt = `Je bent een programmeerleraar. Genereer nu een KORT werkend code voorbeeld voor ${difficulty} niveau over het onderwerp: "${topic}".
+			const examplePrompt = `Geef een code voorbeeld over: ${topic}
 
-Vereisten:
-- Het voorbeeld is 5-15 regels code
-- Het is compleet en werkend
-- Het demonstreert het concept duidelijk
-- Het heeft Nederlands commentaar
-- Het toont de output/result
-
-Voer nu uit:
+Wees EXTREEM kort. Output alleen code blok en output. Niets anders.
 
 \`\`\`javascript
-// [code with Dutch comments]
+// kort voorbeeld
 \`\`\`
 
 Output:
 \`\`\`
-[result]
+resultaat
 \`\`\``;
 
 			const messages = buildChatMessages(
@@ -188,13 +180,38 @@ Output:
 
 			const response = await sendChatRequest(context.model, messages, token, stream);
 			if (response) {
+				let hasContent = false;
 				for await (const fragment of response.text) {
 					stream.markdown(fragment);
+					hasContent = true;
 				}
+
+				// If no response, show a simple example
+				if (!hasContent) {
+					this.showSimpleExample(stream, topic);
+				}
+			} else {
+				this.showSimpleExample(stream, topic);
 			}
 		} catch (error) {
 			console.error('Error generating example:', error);
+			// Show fallback
+			this.showSimpleExample(stream, context.request.prompt);
 		}
+	}
+
+	/**
+	 * Show a simple fallback example
+	 */
+	private showSimpleExample(stream: vscode.ChatResponseStream, topic: string): void {
+		stream.markdown(`\`\`\`javascript\n`);
+		stream.markdown(`// Eenvoudig voorbeeld van ${topic}\n`);
+		stream.markdown(`console.log("Dit is een voorbeeld");\n`);
+		stream.markdown(`\`\`\`\n\n`);
+		stream.markdown(`**Output:**\n`);
+		stream.markdown(`\`\`\`\n`);
+		stream.markdown(`Dit is een voorbeeld\n`);
+		stream.markdown(`\`\`\`\n`);
 	}
 
 	/**
