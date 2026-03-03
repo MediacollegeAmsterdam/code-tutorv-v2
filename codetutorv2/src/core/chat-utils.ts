@@ -49,7 +49,7 @@ export function isAutoModel(model: vscode.LanguageModelChat): boolean {
 
 /**
  * List all concrete (non-auto) language models
- * @param useCache - If true, will use cached results (for compatibility, not implemented here)
+ * @param _useCache
  */
 export async function listConcreteModels(_useCache: boolean = false): Promise<vscode.LanguageModelChat[]> {
     try {
@@ -179,6 +179,8 @@ export async function sendChatRequest(
                     return await trySend(candidate);
                 } catch {
                     // Try next model
+                    // Todo Needs to be implemented
+                    stream.markdown(`_(Andere model geprobeerd: ${candidate.name})_\n`);
                 }
             }
 

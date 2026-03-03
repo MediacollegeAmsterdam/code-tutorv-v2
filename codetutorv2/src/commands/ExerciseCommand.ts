@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import {ICommand} from '../core/ICommand';
 import {ChatContext} from '../core/ChatContext';
 import {buildChatMessages, sendChatRequest} from '../core/chat-utils';
+import {languages} from "vscode";
 
 /**
  * Exercise Command - Generate or suggest programming exercises
@@ -40,7 +41,7 @@ export class ExerciseCommand implements ICommand {
                 userQuery.includes('generate') || userQuery.includes('oefening') ||
                 userQuery.includes('assignment') || userQuery.includes('exercise'));
 
-        if (isGenerating) {
+        if (!isGenerating) {
             // Generate a new exercise based on the user's request
             await this.generateExercise(context, stream, token);
         } else {
@@ -76,14 +77,9 @@ STAP 1 - Begin met deze sectie:
 
 ### 💻 Voorbeeld
 
-\`\`\`javascript
+\`\`\`${languages}
 // [Schrijf hier 5-15 regels werkende code voor ${difficulty} niveau]
 // [Met Nederlands commentaar]
-\`\`\`
-
-**Output:**
-\`\`\`
-[Toon hier de output van de code]
 \`\`\`
 
 STAP 2 - Daarna volgt dit:
@@ -128,7 +124,12 @@ Wat de student moet doen.
 - [ ] Code schoon en opgemaakt
 - [ ] Getest en werkend
 
-NU GENEREER JE HET ANTWOORD MET ECHTE CODE EN INHOUD:`;
+NU GENEREER JE HET ANTWOORD MET ECHTE CODE EN INHOUD:
+
+**Output:**
+\`\`\`
+[Toon hier de output van de code]
+\`\`\``;
 
             const messages = buildChatMessages(
                 basePrompt,
