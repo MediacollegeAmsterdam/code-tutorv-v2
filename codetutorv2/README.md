@@ -1,71 +1,78 @@
-# codetutorv2 README
+# Code Tutor V2
 
-This is the README for your extension "codetutorv2". After writing up a brief description, we recommend including the following sections.
+An AI-powered programming tutor for VS Code that helps students learn to code with progressive feedback, interactive exercises, and adaptive difficulty levels. Powered by GitHub Copilot.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+🎓 **Multiple Programming Languages**
+- Support for JavaScript, TypeScript, Python, Java, C#, C++, C, Go, Rust, PHP, and Ruby
 
-For example if there is an image subfolder under your extension project workspace:
+📚 **Four Core Commands**
+- **Explain** (`/explain`) - Get detailed explanations of code concepts with difficulty-appropriate language
+- **Feedback** (`/feedback`) - Receive progressive feedback on your code using the Socratic method
+- **Exercise** (`/exercise`) - Generate or list programming exercises tailored to your skill level
+- **Level** (`/level`) - Adjust your difficulty level (1-4 based on your experience)
 
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+🤖 **AI-Powered Learning**
+- Integrates seamlessly with GitHub Copilot's chat system
+- Adaptive explanations based on your experience level
+- Progressive feedback that guides learning without giving away answers
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- **VS Code 1.109.0 or later**
+- **GitHub Copilot** installed and activated in VS Code
+- An active GitHub Copilot subscription
+
+## How to Use
+
+1. Open any code file in VS Code
+2. Open the GitHub Copilot Chat panel
+3. Interact with the Code Tutor:
+   - Type `@tutor /explain` to get explanations
+   - Type `@tutor /feedback` for code review feedback
+   - Type `@tutor /exercise` to generate exercises
+   - Type `@tutor /level 2` to change difficulty
+
+### Difficulty Levels
+
+- **Level 1**: Beginner (Year 1 CS student)
+- **Level 2**: Early Intermediate (Year 2)
+- **Level 3**: Advanced (Year 3)
+- **Level 4**: Expert (Year 4+)
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+This extension contributes the following configuration through VS Code:
 
-For example:
+The extension stores your profile data locally including:
+- Current difficulty level
+- Learning history
+- Progress tracking
 
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+No data is sent to external servers beyond what's required for GitHub Copilot integration.
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- Requires GitHub Copilot to be installed and activated
+- Full functionality depends on Copilot API availability
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.0.1
 
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+Initial release of Code Tutor V2 with:
+- Explain command for code explanations
+- Feedback command for Socratic method feedback
+- Exercise command for generating learning exercises
+- Level command for adjusting difficulty
+- Support for 11 programming languages
+- GitHub Copilot Chat integration
 
 ---
 
-## Following extension guidelines
+## For More Information
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+- [VS Code Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+- [GitHub Copilot Documentation](https://docs.github.com/en/copilot)
+- [VS Code Chat Extension API](https://code.visualstudio.com/api/extension-guides/chat)
