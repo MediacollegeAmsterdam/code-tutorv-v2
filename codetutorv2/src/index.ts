@@ -1,5 +1,5 @@
 /**
- * Extracted Features - Main Export
+ * Main Export
  *
  * Barrel export for easy importing of commands and utilities
  */
