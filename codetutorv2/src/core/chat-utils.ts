@@ -179,10 +179,9 @@ export async function sendChatRequest(
                 try {
                     stream.markdown(`_(Andere model geprobeerd: ${candidate.name})_\n`);
                     return await trySend(candidate);
-                } catch {
-                    // Try next model
-                    // Todo Needs to be implemented
-                    stream.markdown(`_(Andere model geprobeerd: ${candidate.name})_\n`);
+                } catch (fallbackErr) {
+                    // Log the error and try next model
+                    console.warn(`[Chat Utils] Fallback model ${candidate.name} also failed:`, fallbackErr);
                 }
             }
 
