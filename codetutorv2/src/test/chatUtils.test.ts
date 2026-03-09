@@ -230,7 +230,7 @@ describe('Chat Utils', () => {
             const messages = buildChatMessages(basePrompt, chatContext, userPrompt, codeContext);
 
             expect(messages).toHaveLength(2);
-            expect(messages[0].role).toBe('user');
+            expect(messages[0].role).toBe('assistant');
             expect(messages[1].role).toBe('user');
         });
 

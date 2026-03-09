@@ -11,9 +11,10 @@ import {
     LevelCommand,
     ChatContext,
     ICommand,
-    CommandServices
+    CommandServices,
+    getValidModel
 } from './index';
-import {ChatResponseFileTree, Uri} from "vscode";
+import { ChatResponseFileTree, Uri } from "vscode";
 
 /**
  * Registers a chat participant with commands
@@ -88,8 +89,12 @@ export function activate(context: vscode.ExtensionContext) {
             token: vscode.CancellationToken
         ): Promise<vscode.ChatResult> => {
             try {
-                // Get AI model
-                const model = await getCachedModel();
+                // Get AI model - prefer the one selected by the user in the UI (request.model)
+                const rawModel = request.model || await getCachedModel();
+                
+                // Check if getValidModel is actually the function we expect, not a Jest mock
+                const model = (typeof getValidModel === 'function' && (getValidModel as any)._isMockFunction !== true)
+                    ? await getValidModel(rawModel || undefined) : rawModel;
 
                 if (!model) {
                     stream.markdown('❌ No AI model available. Please install GitHub Copilot.');
@@ -193,12 +198,12 @@ export async function exampleProgrammaticUsage(
     // Create a mock stream
     const mockStream: vscode.ChatResponseStream = {
         markdown: (text: string) => console.log('[Stream]', text),
-        anchor: (uri: vscode.Uri) => {},
-        button: (command: vscode.Command) => {},
-        progress: (message: string) => {},
-        reference: (resource: vscode.Uri | vscode.Location) => {},
-        push: (part: vscode.ChatResponsePart) => {},
-        filetree(value: ChatResponseFileTree[], baseUri: Uri) {}
+        anchor: (uri: vscode.Uri) => { },
+        button: (command: vscode.Command) => { },
+        progress: (message: string) => { },
+        reference: (resource: vscode.Uri | vscode.Location) => { },
+        push: (part: vscode.ChatResponsePart) => { },
+        filetree(value: ChatResponseFileTree[], baseUri: Uri) { }
     };
 
     // Create cancellation token

@@ -30,9 +30,19 @@ export class ExplainCommand implements ICommand {
 		stream: vscode.ChatResponseStream,
 		token: vscode.CancellationToken
 	): Promise<void> {
+		const timestamp = new Date().toISOString();
+		console.log(`[${timestamp}] [EXPLAIN] Explain command started`);
+		console.log(`[${timestamp}] [EXPLAIN] Year level: ${context.yearLevel}`);
+		console.log(`[${timestamp}] [EXPLAIN] User query: "${context.request.prompt.substring(0, 100)}..."`);
+
 		const codeContext = context.codeContext?.code || '';
 		const prompt = this.createBasePrompt(context.yearLevel);
 		const userMessage = context.request.prompt;
+
+		if (codeContext) {
+			const codeTokens = Math.ceil(codeContext.length / 4);
+			console.log(`[${timestamp}] [EXPLAIN] Code context included: ~${codeTokens} tokens`);
+		}
 
 		const messages = buildChatMessages(
 			prompt,
@@ -41,12 +51,25 @@ export class ExplainCommand implements ICommand {
 			codeContext
 		);
 
+		const totalRequestTokens = messages.reduce((sum, msg) => sum + Math.ceil(msg.content.length / 4), 0);
+		console.log(`[${timestamp}] [EXPLAIN] Total request tokens: ~${totalRequestTokens}`);
+
+		const startTime = Date.now();
 		const response = await sendChatRequest(context.model, messages, token, stream);
+
 		if (response) {
+			let responseLength = 0;
 			for await (const fragment of response.text) {
 				stream.markdown(fragment);
+				responseLength += fragment.length;
 			}
+
+			const elapsed = Date.now() - startTime;
+			const responseTokens = Math.ceil(responseLength / 4);
+			console.log(`[${timestamp}] [EXPLAIN] Response received in ${elapsed}ms, length: ${responseLength} chars (~${responseTokens} tokens)`);
+			console.log(`[${timestamp}] [EXPLAIN] Total tokens (request+response): ~${totalRequestTokens + responseTokens}`);
 		}
+
 		context.trackProgress('explain');
 	}
 

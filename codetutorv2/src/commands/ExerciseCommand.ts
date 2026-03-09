@@ -58,6 +58,7 @@ export class ExerciseCommand implements ICommand {
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<void> {
+        const timestamp = new Date().toISOString();
         stream.markdown(`## 🎯 Oefening aan het genereren...\n\n`);
         try {
             const difficulty = this.getDifficultyForYear(context.yearLevel);
@@ -65,6 +66,9 @@ export class ExerciseCommand implements ICommand {
             // Extract the topic
             let topic = context.request.prompt;
             topic = topic.replace(/geef\s+me\s+een\s+oefening\s+over\s+|give\s+me\s+an\s+exercise\s+about\s+|geef\s+een\s+oefening\s+over\s+/gi, '').trim();
+
+            console.log(`[${timestamp}] [EXERCISE] Generating exercise for topic: "${topic}"`);
+            console.log(`[${timestamp}] [EXERCISE] Difficulty level: ${difficulty}`);
 
             // OPTIMIZED: Much shorter prompt - 60% less tokens
             const basePrompt = `Je bent een programmeerleraar. Maak een korte oefening voor ${difficulty} niveau over: "${topic}"
@@ -88,6 +92,9 @@ Format exakt:
 
 Geen lange uitleg, alleen essentieel.`;
 
+            const promptTokens = Math.ceil(basePrompt.length / 4);
+            console.log(`[${timestamp}] [EXERCISE] Base prompt tokens: ~${promptTokens}`);
+
             const messages = buildChatMessages(
                 basePrompt,
                 context.chatContext,
@@ -95,17 +102,31 @@ Geen lange uitleg, alleen essentieel.`;
                 ''
             );
 
+            console.log(`[${timestamp}] [EXERCISE] Total messages: ${messages.length}`);
+            const totalRequestTokens = messages.reduce((sum, msg) => sum + Math.ceil(msg.content.length / 4), 0);
+            console.log(`[${timestamp}] [EXERCISE] Total request tokens: ~${totalRequestTokens}`);
+
+            const startTime = Date.now();
             const response = await sendChatRequest(context.model, messages, token, stream);
+
             if (response) {
+                let responseLength = 0;
                 for await (const fragment of response.text) {
                     stream.markdown(fragment);
+                    responseLength += fragment.length;
                 }
+
+                const elapsed = Date.now() - startTime;
+                const responseTokens = Math.ceil(responseLength / 4);
+                console.log(`[${timestamp}] [EXERCISE] Response received in ${elapsed}ms, length: ${responseLength} chars (~${responseTokens} tokens)`);
+                console.log(`[${timestamp}] [EXERCISE] Total tokens (request+response): ~${totalRequestTokens + responseTokens}`);
+
                 stream.markdown(`\n\n💡 Vraag /feedback voor hulp!\n`);
             }
 
             context.trackProgress('exercise');
         } catch (error) {
-            console.error('Error generating exercise:', error);
+            console.error(`[${timestamp}] [EXERCISE-ERROR] Failed to generate exercise:`, error);
             stream.markdown(`❌ Kon de oefening niet genereren. Probeer het opnieuw.\n`);
             context.trackProgress('exercise');
         }
@@ -119,9 +140,12 @@ Geen lange uitleg, alleen essentieel.`;
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<void> {
+        const timestamp = new Date().toISOString();
         stream.markdown(`## 🎯 Oefeningen\n\n`);
 
         try {
+            console.log(`[${timestamp}] [EXERCISE-SUGGESTIONS] Generating exercise suggestions`);
+
             // OPTIMIZED: Much shorter suggestion prompt
             const basePrompt = `Geef 3-4 oefening suggesties voor ${this.getDifficultyForYear(context.yearLevel)} niveau.
 
@@ -130,6 +154,9 @@ Format:
 **2. [Onderwerp]** - [1 zin wat je leert]
 **3. [Onderwerp]** - [1 zin wat je leert]`;
 
+            const promptTokens = Math.ceil(basePrompt.length / 4);
+            console.log(`[${timestamp}] [EXERCISE-SUGGESTIONS] Suggestion prompt tokens: ~${promptTokens}`);
+
             const messages = buildChatMessages(
                 basePrompt,
                 context.chatContext,
@@ -137,16 +164,28 @@ Format:
                 ''
             );
 
+            const totalRequestTokens = messages.reduce((sum, msg) => sum + Math.ceil(msg.content.length / 4), 0);
+            console.log(`[${timestamp}] [EXERCISE-SUGGESTIONS] Total request tokens: ~${totalRequestTokens}`);
+
+            const startTime = Date.now();
             const response = await sendChatRequest(context.model, messages, token, stream);
+
             if (response) {
+                let responseLength = 0;
                 for await (const fragment of response.text) {
                     stream.markdown(fragment);
+                    responseLength += fragment.length;
                 }
+
+                const elapsed = Date.now() - startTime;
+                const responseTokens = Math.ceil(responseLength / 4);
+                console.log(`[${timestamp}] [EXERCISE-SUGGESTIONS] Response received in ${elapsed}ms, length: ${responseLength} chars (~${responseTokens} tokens)`);
+                console.log(`[${timestamp}] [EXERCISE-SUGGESTIONS] Total tokens (request+response): ~${totalRequestTokens + responseTokens}`);
             }
 
             context.trackProgress('exercise');
         } catch (error) {
-            console.error('Error showing suggestions:', error);
+            console.error(`[${timestamp}] [EXERCISE-SUGGESTIONS-ERROR] Failed to show suggestions:`, error);
             stream.markdown(`❌ Kon suggesties niet laden.\n`);
             context.trackProgress('exercise');
         }

@@ -70,7 +70,17 @@
           }
         ]
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Code Tutor",
+      "properties": {
+        "codeTutor.preferredModel": {
+          "type": "string",
+          "default": "",
+          "description": "The ID of the preferred language model to use for the tutor (e.g. 'copilot:gpt-4o'). If empty, the best available model will be auto-selected."
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
