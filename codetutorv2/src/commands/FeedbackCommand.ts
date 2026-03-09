@@ -75,25 +75,18 @@ export class FeedbackCommand implements ICommand {
         const sid = sessionId || `session-${Date.now()}`;
         let session = this.feedbackSessions.get(sid);
         const codeHash = this.hashCode(code);
-        const timestamp = new Date().toISOString();
-
-        console.log(`[${timestamp}] [FEEDBACK] New feedback request - Issue: "${issue.substring(0, 50)}..."`);
-        console.log(`[${timestamp}] [FEEDBACK] Code hash: ${codeHash}, Language: ${language}`);
 
         if (!session) {
             session = {attempts: 0, lastFeedbackLevel: 'initial', previousFeedback: [], codeHash};
             this.feedbackSessions.set(sid, session);
-            console.log(`[${timestamp}] [FEEDBACK] Created new session: ${sid}`);
         }
 
         // If code hasn't changed, return cached feedback
         if (session.codeHash === codeHash && session.previousFeedback.length > 0 && attempt <= session.attempts) {
-            console.log(`[${timestamp}] [FEEDBACK] Code unchanged - returning cached feedback (attempt ${session.attempts})`);
             return session.previousFeedback[session.attempts - 1] || 'Geen feedback beschikbaar.';
         }
 
         session.attempts++;
-        console.log(`[${timestamp}] [FEEDBACK] Attempt ${session.attempts} - Level: ${session.attempts === 1 ? 'initial' : session.attempts <= 3 ? 'tips' : 'example'}`);
 
         // Level 1: Initial Feedback (Attempt 1) - OPTIMIZED
         if (session.attempts === 1) {
@@ -109,14 +102,9 @@ Geef kort feedback (max 100 woorden):
 2. 1 gericht vraag om zelf op te lossen
 Geen Code, geen uitleg, enkel vragen.`;
 
-            const promptTokens = Math.ceil(initialPrompt.length / 4);
-            console.log(`[${timestamp}] [FEEDBACK-L1] Sending request to ${model.name || model.id}`);
-            console.log(`[${timestamp}] [FEEDBACK-L1] Prompt tokens: ~${promptTokens}`);
-
             const messages = [vscode.LanguageModelChatMessage.User(initialPrompt)];
 
             try {
-                const startTime = Date.now();
                 const response = await model.sendRequest(messages, {}, token);
                 let fullResponse = '';
                 let charCount = 0;
@@ -131,17 +119,10 @@ Geen Code, geen uitleg, enkel vragen.`;
                     charCount += fragment.length;
                 }
 
-                const elapsed = Date.now() - startTime;
-                const responseTokens = Math.ceil(charCount / 4);
-                console.log(`[${timestamp}] [FEEDBACK-L1] Response complete in ${elapsed}ms`);
-                console.log(`[${timestamp}] [FEEDBACK-L1] Response length: ${charCount} chars (~${responseTokens} tokens)`);
-                console.log(`[${timestamp}] [FEEDBACK-L1] Total tokens (request+response): ~${promptTokens + responseTokens}`);
-
                 session.lastFeedbackLevel = 'initial';
                 session.previousFeedback.push(fullResponse);
                 return fullResponse;
             } catch (e) {
-                console.error(`[${timestamp}] [FEEDBACK-L1-ERROR] Failed to generate feedback:`, e);
                 return 'Kon feedback niet genereren. Probeer opnieuw.';
             }
         }
@@ -160,14 +141,9 @@ Geef 3 concrete tips (max 120 woorden):
 - Debug techniek
 - Volgende stap`;
 
-            const promptTokens = Math.ceil(tipsPrompt.length / 4);
-            console.log(`[${timestamp}] [FEEDBACK-L2] Sending request to ${model.name || model.id}`);
-            console.log(`[${timestamp}] [FEEDBACK-L2] Prompt tokens: ~${promptTokens}`);
-
             const messages = [vscode.LanguageModelChatMessage.User(tipsPrompt)];
 
             try {
-                const startTime = Date.now();
                 const response = await model.sendRequest(messages, {}, token);
                 let fullResponse = '';
                 let charCount = 0;
@@ -182,17 +158,10 @@ Geef 3 concrete tips (max 120 woorden):
                     charCount += fragment.length;
                 }
 
-                const elapsed = Date.now() - startTime;
-                const responseTokens = Math.ceil(charCount / 4);
-                console.log(`[${timestamp}] [FEEDBACK-L2] Response complete in ${elapsed}ms`);
-                console.log(`[${timestamp}] [FEEDBACK-L2] Response length: ${charCount} chars (~${responseTokens} tokens)`);
-                console.log(`[${timestamp}] [FEEDBACK-L2] Total tokens (request+response): ~${promptTokens + responseTokens}`);
-
                 session.lastFeedbackLevel = 'tips';
                 session.previousFeedback.push(fullResponse);
                 return fullResponse;
             } catch (e) {
-                console.error(`[${timestamp}] [FEEDBACK-L2-ERROR] Failed to generate tips:`, e);
                 return 'Kon tips niet genereren. Probeer opnieuw.';
             }
         }
@@ -213,14 +182,9 @@ Output (250 woorden max):
 Hoe het werkt:
 [korte uitleg]`;
 
-            const promptTokens = Math.ceil(examplePrompt.length / 4);
-            console.log(`[${timestamp}] [FEEDBACK-L3] Sending request to ${model.name || model.id}`);
-            console.log(`[${timestamp}] [FEEDBACK-L3] Prompt tokens: ~${promptTokens}`);
-
             const messages = [vscode.LanguageModelChatMessage.User(examplePrompt)];
 
             try {
-                const startTime = Date.now();
                 const response = await model.sendRequest(messages, {}, token);
                 let fullResponse = '';
                 let charCount = 0;
@@ -235,24 +199,16 @@ Hoe het werkt:
                     charCount += fragment.length;
                 }
 
-                const elapsed = Date.now() - startTime;
-                const responseTokens = Math.ceil(charCount / 4);
-                console.log(`[${timestamp}] [FEEDBACK-L3] Response complete in ${elapsed}ms`);
-                console.log(`[${timestamp}] [FEEDBACK-L3] Response length: ${charCount} chars (~${responseTokens} tokens)`);
-                console.log(`[${timestamp}] [FEEDBACK-L3] Total tokens (request+response): ~${promptTokens + responseTokens}`);
-
                 session.lastFeedbackLevel = 'example';
                 session.previousFeedback.push(fullResponse);
 
                 // Clean up after 30 seconds
                 setTimeout(() => {
                     this.feedbackSessions.delete(sid);
-                    console.log(`[${new Date().toISOString()}] [FEEDBACK] Session ${sid} cleaned up`);
                 }, 30000);
 
                 return fullResponse;
             } catch (e) {
-                console.error(`[${timestamp}] [FEEDBACK-L3-ERROR] Failed to generate example:`, e);
                 return 'Kon voorbeeld niet genereren. Probeer opnieuw.';
             }
         }

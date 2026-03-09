@@ -23,7 +23,6 @@ export function activate(context: vscode.ExtensionContext) {
     // Step 1: Create your services implementation
     const services: CommandServices = {
         updateProgress: (command: string) => {
-            console.log(`Command executed: ${command}`);
             // Implement your progress tracking logic
             return { command, timestamp: new Date().toISOString() };
         },
@@ -93,7 +92,7 @@ export function activate(context: vscode.ExtensionContext) {
                 const rawModel = request.model || await getCachedModel();
                 
                 // Check if getValidModel is actually the function we expect, not a Jest mock
-                const model = (typeof getValidModel === 'function' && (getValidModel as any)._isMockFunction !== true)
+                const model = (typeof getValidModel === 'function' && !(getValidModel as any)._isMockFunction)
                     ? await getValidModel(rawModel || undefined) : rawModel;
 
                 if (!model) {
@@ -113,13 +112,6 @@ export function activate(context: vscode.ExtensionContext) {
 
                 // Parse command - first try request.command, then try parsing from prompt
                 let commandName = '';
-
-                // Debug: log what we receive
-                console.log('[Code Tutor] Request:', {
-                    prompt: request.prompt,
-                    command: (request as any).command,
-                    hasCommand: 'command' in request
-                });
 
                 // Check if request has a command property (newer VS Code API)
                 if ('command' in request && request.command) {
