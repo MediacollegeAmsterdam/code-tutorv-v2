@@ -3,7 +3,7 @@ import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 jest.mock('vscode');
 const vscode: any = require('vscode');
 
-import { LevelCommand } from '../commands/LevelCommand';
+import { LevelCommand } from '../../commands/LevelCommand';
 
 describe('LevelCommand', () => {
   let cmd: LevelCommand;

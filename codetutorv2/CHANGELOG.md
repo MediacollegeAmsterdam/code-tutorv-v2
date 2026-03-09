@@ -2,7 +2,15 @@
 
 All notable changes to the "Code Tutor V2" extension will be documented in this file.
 
-## [0.0.1] - 2026-03-03
+
+## [0.0.2] - 09/03/2026
+
+### Added 
+- Major bug fixes
+- Improvement to commands 
+- Better responses
+
+## [0.0.1] - 03/03/2026
 
 ### Added
 - Initial release of Code Tutor V2

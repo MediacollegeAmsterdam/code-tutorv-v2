@@ -4,7 +4,7 @@ import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 jest.mock('vscode');
 const vscode: any = require('vscode');
 
-import { ExplainCommand } from '../commands/ExplainCommand';
+import { ExplainCommand } from '../../commands/ExplainCommand';
 
 describe('ExplainCommand', () => {
   let cmd: ExplainCommand;
