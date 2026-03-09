@@ -240,28 +240,3 @@ async function getCachedModel(): Promise<vscode.LanguageModelChat | null> {
         return null;
     }
 }
-
-/**
- * Example: Custom command implementation
- */
-class CustomCommand implements ICommand {
-    readonly name = 'custom';
-    readonly description = 'My custom command';
-    readonly aliases = ['mycommand'];
-
-    async execute(
-        context: ChatContext,
-        stream: vscode.ChatResponseStream,
-        token: vscode.CancellationToken
-    ): Promise<void> {
-        stream.markdown(`## Custom Command\n\n`);
-        stream.markdown(`Student ID: ${context.studentId}\n`);
-        stream.markdown(`Year Level: ${context.yearLevel}\n`);
-
-        if (context.codeContext) {
-            stream.markdown(`\nYou have code selected in ${context.codeContext.language}\n`);
-        }
-
-        context.trackProgress('custom');
-    }
-}
