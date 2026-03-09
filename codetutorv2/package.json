@@ -2,7 +2,7 @@
   "name": "codetutorv2",
   "displayName": "Code Tutor V2",
   "description": "An AI-powered programming tutor for VS Code that provides progressive feedback, explanations, and exercises",
-  "version": "0.0.3",
+  "version": "0.0.2",
   "publisher": "MediacollegeAmsterdam",
   "license": "MIT",
   "repository": {
@@ -70,10 +70,20 @@
           }
         ]
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Code Tutor",
+      "properties": {
+        "codeTutor.preferredModel": {
+          "type": "string",
+          "default": "",
+          "description": "The ID of the preferred language model to use for the tutor (e.g. 'copilot:gpt-4o'). If empty, the best available model will be auto-selected."
+        }
+      }
+    }
   },
   "scripts": {
-    "vscode:prepublish": "vsce run package 0.0.3",
+    "vscode:prepublish": "npm run package",
     "compile": "npm run check-types && npm run lint && node esbuild.js",
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",

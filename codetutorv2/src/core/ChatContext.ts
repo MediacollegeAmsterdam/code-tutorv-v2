@@ -84,7 +84,7 @@ export class ChatContext {
 		const codeContext = getCodeContext();
 
 		return new ChatContext(
-			studentId,
+            studentId,
 			yearLevel,
 			request,
 			chatContext,

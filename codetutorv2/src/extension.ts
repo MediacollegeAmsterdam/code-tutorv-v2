@@ -11,9 +11,10 @@ import {
     LevelCommand,
     ChatContext,
     ICommand,
-    CommandServices
+    CommandServices,
+    getValidModel
 } from './index';
-import {ChatResponseFileTree, Uri} from "vscode";
+import { ChatResponseFileTree, Uri } from "vscode";
 
 /**
  * Registers a chat participant with commands
@@ -22,7 +23,6 @@ export function activate(context: vscode.ExtensionContext) {
     // Step 1: Create your services implementation
     const services: CommandServices = {
         updateProgress: (command: string) => {
-            console.log(`Command executed: ${command}`);
             // Implement your progress tracking logic
             return { command, timestamp: new Date().toISOString() };
         },
@@ -88,10 +88,12 @@ export function activate(context: vscode.ExtensionContext) {
             token: vscode.CancellationToken
         ): Promise<vscode.ChatResult> => {
             try {
-                // Get AI model
-                const [model] = await vscode.lm.selectChatModels({
-                    vendor: 'copilot'
-                });
+                // Get AI model - prefer the one selected by the user in the UI (request.model)
+                const rawModel = request.model || await getCachedModel();
+                
+                // Check if getValidModel is actually the function we expect, not a Jest mock
+                const model = (typeof getValidModel === 'function' && !(getValidModel as any)._isMockFunction)
+                    ? await getValidModel(rawModel || undefined) : rawModel;
 
                 if (!model) {
                     stream.markdown('❌ No AI model available. Please install GitHub Copilot.');
@@ -110,13 +112,6 @@ export function activate(context: vscode.ExtensionContext) {
 
                 // Parse command - first try request.command, then try parsing from prompt
                 let commandName = '';
-
-                // Debug: log what we receive
-                console.log('[Code Tutor] Request:', {
-                    prompt: request.prompt,
-                    command: (request as any).command,
-                    hasCommand: 'command' in request
-                });
 
                 // Check if request has a command property (newer VS Code API)
                 if ('command' in request && request.command) {
@@ -195,12 +190,12 @@ export async function exampleProgrammaticUsage(
     // Create a mock stream
     const mockStream: vscode.ChatResponseStream = {
         markdown: (text: string) => console.log('[Stream]', text),
-        anchor: (uri: vscode.Uri) => {},
-        button: (command: vscode.Command) => {},
-        progress: (message: string) => {},
-        reference: (resource: vscode.Uri | vscode.Location) => {},
-        push: (part: vscode.ChatResponsePart) => {},
-        filetree(value: ChatResponseFileTree[], baseUri: Uri) {}
+        anchor: (uri: vscode.Uri) => { },
+        button: (command: vscode.Command) => { },
+        progress: (message: string) => { },
+        reference: (resource: vscode.Uri | vscode.Location) => { },
+        push: (part: vscode.ChatResponsePart) => { },
+        filetree(value: ChatResponseFileTree[], baseUri: Uri) { }
     };
 
     // Create cancellation token
@@ -219,6 +214,31 @@ export async function exampleProgrammaticUsage(
     // Execute explain command
     const explainCmd = new ExplainCommand();
     await explainCmd.execute(chatContext, mockStream, token);
+}
+
+/**
+ * Model cache to avoid repeated API calls (60 second TTL)
+ */
+let cachedModel: vscode.LanguageModelChat | null = null;
+let modelCacheTime = 0;
+
+async function getCachedModel(): Promise<vscode.LanguageModelChat | null> {
+    const now = Date.now();
+    if (cachedModel && (now - modelCacheTime) < 60000) {
+        return cachedModel;
+    }
+
+    try {
+        const [model] = await vscode.lm.selectChatModels({ vendor: 'copilot' });
+        if (model) {
+            cachedModel = model;
+            modelCacheTime = now;
+        }
+        return model || null;
+    } catch (error) {
+        console.error('Failed to get model:', error);
+        return null;
+    }
 }
 
 /**

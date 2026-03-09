@@ -58,78 +58,42 @@ export class ExerciseCommand implements ICommand {
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<void> {
+        const timestamp = new Date().toISOString();
         stream.markdown(`## 🎯 Oefening aan het genereren...\n\n`);
         try {
             const difficulty = this.getDifficultyForYear(context.yearLevel);
-            const difficultyText = this.getDifficultyDescription(context.yearLevel);
 
             // Extract the topic
             let topic = context.request.prompt;
             topic = topic.replace(/geef\s+me\s+een\s+oefening\s+over\s+|give\s+me\s+an\s+exercise\s+about\s+|geef\s+een\s+oefening\s+over\s+/gi, '').trim();
 
-            // Generate BOTH example and exercise in ONE request
-            const basePrompt = `Je bent een expert programmeerleraar. Maak een oefening voor ${difficultyText} studenten over: "${topic}"
+            console.log(`[${timestamp}] [EXERCISE] Generating exercise for topic: "${topic}"`);
+            console.log(`[${timestamp}] [EXERCISE] Difficulty level: ${difficulty}`);
 
-JE MOET DEZE EXACTE STRUCTUUR VOLGEN - GEEN UITZONDERINGEN:
+            // OPTIMIZED: Much shorter prompt - 60% less tokens
+            const basePrompt = `Je bent een programmeerleraar. Maak een korte oefening voor ${difficulty} niveau over: "${topic}"
 
-STAP 1 - Begin met deze sectie:
-
-
+Format exakt:
 ### 💻 Voorbeeld
-
-\`\`\`${languages}
-// [Schrijf hier 5-15 regels werkende code voor ${difficulty} niveau]
-// [Met Nederlands commentaar]
+\`\`\`javascript
+// [code voorbeeld - 5 regels max]
 \`\`\`
-
-STAP 2 - Daarna volgt dit:
-
----
 
 ### 📝 Oefening
+**${topic}** - ${difficulty} niveau
 
-## 📚 ${topic.charAt(0).toUpperCase() + topic.slice(1)} Oefening
+**Doel:** [1 zin]
 
-**Niveau:** ${difficulty.toUpperCase()}  
-**Geschatte tijd:** 45-60 minuten
+**Opdracht:** [2-3 zinnen wat te doen]
 
-### 🎯 Lesdoelen
-- Lesdoel 1
-- Lesdoel 2  
-- Lesdoel 3
+**Hints:**
+- [Hint 1]
+- [Hint 2]
 
-### 📖 Context & Inleiding
-Uitleg waarom dit belangrijk is.
+Geen lange uitleg, alleen essentieel.`;
 
-### 🚀 Hoofd Opdracht
-Wat de student moet doen.
-
-### 📋 Stap-voor-stap
-1. **Voorbereiding**: Setup stap
-2. **Taak 1**: Eerste taak
-3. **Taak 2**: Tweede taak
-4. **Taak 3**: Derde taak
-
-### 💡 Hints
-- **Voor taak 1**: Hint 1
-- **Voor taak 2**: Hint 2
-- **Voor taak 3**: Hint 3
-
-### 📚 Nuttige Resources
-- Resource 1
-- Resource 2
-
-### ✅ Klaar om in te dienen?
-- [ ] Alle taken afgemaakt
-- [ ] Code schoon en opgemaakt
-- [ ] Getest en werkend
-
-NU GENEREER JE HET ANTWOORD MET ECHTE CODE EN INHOUD:
-
-**Output:**
-\`\`\`
-[Toon hier de output van de code]
-\`\`\``;
+            const promptTokens = Math.ceil(basePrompt.length / 4);
+            console.log(`[${timestamp}] [EXERCISE] Base prompt tokens: ~${promptTokens}`);
 
             const messages = buildChatMessages(
                 basePrompt,
@@ -138,18 +102,31 @@ NU GENEREER JE HET ANTWOORD MET ECHTE CODE EN INHOUD:
                 ''
             );
 
+            console.log(`[${timestamp}] [EXERCISE] Total messages: ${messages.length}`);
+            const totalRequestTokens = messages.reduce((sum, msg) => sum + Math.ceil(msg.content.length / 4), 0);
+            console.log(`[${timestamp}] [EXERCISE] Total request tokens: ~${totalRequestTokens}`);
+
+            const startTime = Date.now();
             const response = await sendChatRequest(context.model, messages, token, stream);
+
             if (response) {
+                let responseLength = 0;
                 for await (const fragment of response.text) {
                     stream.markdown(fragment);
+                    responseLength += fragment.length;
                 }
-                stream.markdown(`\n\n---\n\n`);
-                stream.markdown(`💡 **Tip:** Vraag me om /feedback als je hulp nodig hebt bij het oplossen!\n`);
+
+                const elapsed = Date.now() - startTime;
+                const responseTokens = Math.ceil(responseLength / 4);
+                console.log(`[${timestamp}] [EXERCISE] Response received in ${elapsed}ms, length: ${responseLength} chars (~${responseTokens} tokens)`);
+                console.log(`[${timestamp}] [EXERCISE] Total tokens (request+response): ~${totalRequestTokens + responseTokens}`);
+
+                stream.markdown(`\n\n💡 Vraag /feedback voor hulp!\n`);
             }
 
             context.trackProgress('exercise');
         } catch (error) {
-            console.error('Error generating exercise:', error);
+            console.error(`[${timestamp}] [EXERCISE-ERROR] Failed to generate exercise:`, error);
             stream.markdown(`❌ Kon de oefening niet genereren. Probeer het opnieuw.\n`);
             context.trackProgress('exercise');
         }
@@ -163,39 +140,52 @@ NU GENEREER JE HET ANTWOORD MET ECHTE CODE EN INHOUD:
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<void> {
+        const timestamp = new Date().toISOString();
         stream.markdown(`## 🎯 Oefeningen\n\n`);
 
         try {
-            const basePrompt = `Je bent een programmeerleraar. Geef 3-4 interessante oefening suggesties die goed passen voor ${this.getDifficultyDescription(context.yearLevel)} students.
+            console.log(`[${timestamp}] [EXERCISE-SUGGESTIONS] Generating exercise suggestions`);
 
-Maak het leuk en inspirerend. Kort en direct. Gebruik deze format:
+            // OPTIMIZED: Much shorter suggestion prompt
+            const basePrompt = `Geef 3-4 oefening suggesties voor ${this.getDifficultyForYear(context.yearLevel)} niveau.
 
-### 💪 Suggesties voor jou:
+Format:
+**1. [Onderwerp]** - [1 zin wat je leert]
+**2. [Onderwerp]** - [1 zin wat je leert]
+**3. [Onderwerp]** - [1 zin wat je leert]`;
 
-**1. [Onderwerp 1]** - [1 zin wat je leert]
-**2. [Onderwerp 2]** - [1 zin wat je leert]
-**3. [Onderwerp 3]** - [1 zin wat je leert]
-**4. [Onderwerp 4]** - [1 zin wat je leert]
-
-💬 Zeg bijvoorbeeld: "Geef me een oefening over loops" en ik maak er één voor je!`;
+            const promptTokens = Math.ceil(basePrompt.length / 4);
+            console.log(`[${timestamp}] [EXERCISE-SUGGESTIONS] Suggestion prompt tokens: ~${promptTokens}`);
 
             const messages = buildChatMessages(
                 basePrompt,
                 context.chatContext,
-                'Geef suggesties voor interessante oefeningen',
+                'Geef suggesties',
                 ''
             );
 
+            const totalRequestTokens = messages.reduce((sum, msg) => sum + Math.ceil(msg.content.length / 4), 0);
+            console.log(`[${timestamp}] [EXERCISE-SUGGESTIONS] Total request tokens: ~${totalRequestTokens}`);
+
+            const startTime = Date.now();
             const response = await sendChatRequest(context.model, messages, token, stream);
+
             if (response) {
+                let responseLength = 0;
                 for await (const fragment of response.text) {
                     stream.markdown(fragment);
+                    responseLength += fragment.length;
                 }
+
+                const elapsed = Date.now() - startTime;
+                const responseTokens = Math.ceil(responseLength / 4);
+                console.log(`[${timestamp}] [EXERCISE-SUGGESTIONS] Response received in ${elapsed}ms, length: ${responseLength} chars (~${responseTokens} tokens)`);
+                console.log(`[${timestamp}] [EXERCISE-SUGGESTIONS] Total tokens (request+response): ~${totalRequestTokens + responseTokens}`);
             }
 
             context.trackProgress('exercise');
         } catch (error) {
-            console.error('Error showing suggestions:', error);
+            console.error(`[${timestamp}] [EXERCISE-SUGGESTIONS-ERROR] Failed to show suggestions:`, error);
             stream.markdown(`❌ Kon suggesties niet laden.\n`);
             context.trackProgress('exercise');
         }

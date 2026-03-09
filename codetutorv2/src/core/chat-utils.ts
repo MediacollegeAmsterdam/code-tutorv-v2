@@ -1,5 +1,6 @@
 /**
  * Chat Utilities - Helper functions for chat participant
+ * WITH COMPREHENSIVE LOGGING FOR TOKEN USAGE TRACKING
  */
 
 import * as vscode from 'vscode';
@@ -19,8 +20,9 @@ export function getCodeContext(): CodeContext | null {
     const selectedText = editor.document.getText(selection);
 
     if (selectedText) {
+        const codeContext = `\n\nGeselecteerde code:\n\`\`\`${editor.document.languageId}\n${selectedText}\n\`\`\``;
         return {
-            code: `\n\nGeselecteerde code:\n\`\`\`${editor.document.languageId}\n${selectedText}\n\`\`\``,
+            code: codeContext,
             language: editor.document.languageId
         };
     }
@@ -44,7 +46,7 @@ export function getCodeContext(): CodeContext | null {
 export function isAutoModel(model: vscode.LanguageModelChat): boolean {
     return model.id.toLowerCase().includes('auto') ||
         model.name.toLowerCase().includes('auto') ||
-        model.vendor === 'copilot' && model.family === '';
+        (model.vendor === 'copilot' && model.family === '');
 }
 
 /**
@@ -54,9 +56,9 @@ export function isAutoModel(model: vscode.LanguageModelChat): boolean {
 export async function listConcreteModels(_useCache: boolean = false): Promise<vscode.LanguageModelChat[]> {
     try {
         const allModels = await vscode.lm.selectChatModels();
+
         return allModels.filter(m => !isAutoModel(m));
     } catch (error) {
-        console.error('Failed to list concrete models:', error);
         return [];
     }
 }
@@ -69,29 +71,29 @@ export async function listConcreteModels(_useCache: boolean = false): Promise<vs
 export async function getValidModel(model: vscode.LanguageModelChat | undefined): Promise<vscode.LanguageModelChat | null> {
     try {
         const list = await listConcreteModels(true);
+
         if (list.length === 0) {
             return null;
         }
 
-        // Check for user preference first
+        if (model && !isAutoModel(model)) {
+            const found = list.find((m: vscode.LanguageModelChat) => m.id === model.id);
+            if (found) {
+                return found;
+            }
+        }
+
+        // Check for user preference (settings) only if no explicit model was provided via UI
         const preferredModelId = vscode.workspace.getConfiguration('codeTutor').get<string>('preferredModel');
         if (preferredModelId) {
             const preferred = list.find(m => m.id === preferredModelId);
             if (preferred) {
-                console.log(`[Chat Utils] Using preferred model: ${preferred.name || preferred.id}`);
                 return preferred;
-            } else {
-                console.warn(`[Chat Utils] Preferred model "${preferredModelId}" not found, using fallback`);
             }
         }
 
-        if (model && !isAutoModel(model)) {
-            const found = list.find((m: vscode.LanguageModelChat) => m.id === model.id);
-            return found || list[0];
-        }
         return list[0] ?? null;
     } catch (e) {
-        console.error('Failed to select valid model:', e);
         return null;
     }
 }
@@ -101,16 +103,17 @@ export async function getValidModel(model: vscode.LanguageModelChat | undefined)
  */
 export function createBasePrompt(yearLevel: number): string {
     const basePrompts: Record<number, string> = {
-        1: 'Je bent een hulpzame programming coach voor eerstejaars studenten. Zorg dat je: 1) ALLES uitlegt - geen aannames over voorkennis, 2) Kleine stappen zet, 3) Veel voorbeelden geeft, 4) Moeilijke concepten vergelijkt met dagelijks leven, 5) Veel aanmoediging geeft. GEEN CODE TENZIJ HINTS GEVRAAGD. Het is oke als dingen simpel lijken - fundamentals zijn belangrijk! Spreek Nederlands.',
-        2: 'Je bent een programming coach voor 2nd year studenten. Ze hebben basics, dus focus op: 1) Praktische projecten, 2) Best practices, 3) Code kwaliteit, 4) Kleine design patterns. Leg nog steeds uit maar aannames kunnen hoger. GEEN CODE TENZIJ HINTS. Spreek Nederlands.',
-        3: 'Je bent een programming mentor voor 3rd year studenten. Ze kunnen zelfstandig code schrijven. Focus op: 1) Advanced patterns, 2) System design, 3) Performance optimization, 4) Best practices op scale. Kan technische termen gebruiken. GEEN CODE TENZIJ HINTS. Spreek Nederlands.',
-        4: 'Je bent een expert programming mentor voor 4th year studenten / professionals. Focus op: 1) Research topics, 2) Cutting-edge tech, 3) Innovation, 4) Specialized domains. Kan aannames doen over diep kennis. GEEN CODE TENZIJ HINTS. Spreek Nederlands.'
+        1: 'Je bent programmeercoach voor eerstejaars. Leg ALLES uit, geen aannames. Kleine stappen, veel voorbeelden. GEEN CODE tenzij gevraagd. Nederlands.',
+        2: 'Je bent programmeercoach voor 2e jaars. Focus op praktijk, best practices. GEEN CODE tenzij hints. Nederlands.',
+        3: 'Je bent programmeermentoor voor 3e jaars. Advanced patterns, systeem design. GEEN CODE tenzij hints. Nederlands.',
+        4: 'Je bent expert mentor voor 4e jaars/professionals. Cutting-edge, onderzoek. GEEN CODE tenzij hints. Nederlands.'
     };
     return basePrompts[yearLevel] || basePrompts[2];
 }
 
 /**
- * Build chat messages array with context history
+ * Build chat messages array with context history - OPTIMIZED
+ * Only includes last 2 history items instead of all history
  */
 export function buildChatMessages(
     basePrompt: string,
@@ -118,24 +121,30 @@ export function buildChatMessages(
     userPrompt: string,
     codeContext: string
 ): vscode.LanguageModelChatMessage[] {
-    const messages: vscode.LanguageModelChatMessage[] = [
-        vscode.LanguageModelChatMessage.User(basePrompt)
-    ];
 
-    // Add previous messages from history
+    const messages: vscode.LanguageModelChatMessage[] = [
+        vscode.LanguageModelChatMessage.Assistant(basePrompt)
+    ];
+    let totalTokens = Math.ceil(basePrompt.length / 4);
+
+    // OPTIMIZED: Only last 2 messages from history to reduce tokens
     const previousMessages = Array.isArray(chatContext?.history)
-        ? chatContext.history.filter(
-            (h: any) => (vscode.ChatResponseTurn ? h instanceof vscode.ChatResponseTurn : false)
-        )
+        ? chatContext.history
+            .filter((h: any) => (vscode.ChatResponseTurn ? h instanceof vscode.ChatResponseTurn : false))
+            .slice(-2) // Only last 2 messages
         : [];
 
-    previousMessages.forEach(m => {
+    previousMessages.forEach((m, index) => {
         let fullMessage = '';
         m.response.forEach((r: any) => {
             const mdPart = r as vscode.ChatResponseMarkdownPart;
             fullMessage += mdPart.value?.value || '';
         });
-        messages.push(vscode.LanguageModelChatMessage.Assistant(fullMessage));
+        if (fullMessage.length < 500) {
+            const msgTokens = Math.ceil(fullMessage.length / 4);
+            totalTokens += msgTokens;
+            messages.push(vscode.LanguageModelChatMessage.Assistant(fullMessage));
+        }
     });
 
     // Add current user message with code context
@@ -154,18 +163,25 @@ export async function sendChatRequest(
     token: vscode.CancellationToken,
     stream: vscode.ChatResponseStream
 ): Promise<vscode.LanguageModelChatResponse | null> {
-    const trySend = async (m: vscode.LanguageModelChat) =>
-        m.sendRequest(messages, {}, token);
+    const startTime = Date.now();
+
+    const trySend = async (m: vscode.LanguageModelChat) => {
+        return m.sendRequest(messages, {}, token);
+    };
 
     try {
         return await trySend(model);
     } catch (err: any) {
         const msg = String(err?.message || '').toLowerCase();
+        const elapsed = Date.now() - startTime;
+
         const isAutoIssue = msg.includes('endpoint not found') || msg.includes('model auto');
         const isUnsupported = msg.includes('unsupported') ||
             (err?.code && String(err.code).toLowerCase().includes('unsupported'));
 
         if (isAutoIssue || isUnsupported) {
+            stream.markdown(`_(Andere model geprobeerd: ${model.name})_\n`);
+
             // Rotate through other concrete models and try again
             const list = await listConcreteModels();
             const currentIndex = list.findIndex((m: vscode.LanguageModelChat) => m.id === model.id);
@@ -179,9 +195,8 @@ export async function sendChatRequest(
                 try {
                     stream.markdown(`_(Andere model geprobeerd: ${candidate.name})_\n`);
                     return await trySend(candidate);
-                } catch (fallbackErr) {
-                    // Log the error and try next model
-                    console.warn(`[Chat Utils] Fallback model ${candidate.name} also failed:`, fallbackErr);
+                } catch (fallbackErr: any) {
+                    return null;
                 }
             }
 
