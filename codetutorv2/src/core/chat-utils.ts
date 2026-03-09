@@ -3,7 +3,7 @@
  */
 
 import * as vscode from 'vscode';
-import { CodeContext } from '../types';
+import {CodeContext} from '../types';
 
 /**
  * Get code context from active editor
@@ -123,15 +123,17 @@ export function buildChatMessages(
     ];
 
     // Add previous messages from history
-    const previousMessages = chatContext.history.filter(
-        h => h instanceof vscode.ChatResponseTurn
-    );
+    const previousMessages = Array.isArray(chatContext?.history)
+        ? chatContext.history.filter(
+            (h: any) => (vscode.ChatResponseTurn ? h instanceof vscode.ChatResponseTurn : false)
+        )
+        : [];
 
     previousMessages.forEach(m => {
         let fullMessage = '';
-        m.response.forEach(r => {
+        m.response.forEach((r: any) => {
             const mdPart = r as vscode.ChatResponseMarkdownPart;
-            fullMessage += mdPart.value.value;
+            fullMessage += mdPart.value?.value || '';
         });
         messages.push(vscode.LanguageModelChatMessage.Assistant(fullMessage));
     });
@@ -191,4 +193,3 @@ export async function sendChatRequest(
         }
     }
 }
-

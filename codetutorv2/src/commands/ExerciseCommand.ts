@@ -155,7 +155,6 @@ NU GENEREER JE HET ANTWOORD MET ECHTE CODE EN INHOUD:
         }
     }
 
-
     /**
      * Show exercise suggestions and guidance
      */

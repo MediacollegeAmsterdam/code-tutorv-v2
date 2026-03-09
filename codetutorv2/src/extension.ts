@@ -187,7 +187,6 @@ export async function exampleProgrammaticUsage(
         model: model
     };
 
-
     // Create a mock chat context
     const mockChatContext: vscode.ChatContext = {
         history: []
