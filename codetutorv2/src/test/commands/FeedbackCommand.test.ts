@@ -1,9 +1,9 @@
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 
-jest.unstable_mockModule('vscode', () => require('./__mocks__/vscode'));
+jest.unstable_mockModule('vscode', () => require('../__mocks__/vscode'));
 const vscode: any = require('vscode');
 
-import { FeedbackCommand } from '../commands/FeedbackCommand';
+import { FeedbackCommand } from '../../commands/FeedbackCommand';
 
 describe('FeedbackCommand', () => {
   let cmd: FeedbackCommand;
