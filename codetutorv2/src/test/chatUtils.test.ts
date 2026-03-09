@@ -193,30 +193,30 @@ describe('Chat Utils', () => {
         test('should return year 1 prompt for level 1', () => {
             const prompt = createBasePrompt(1);
             expect(prompt).toContain('eerstejaars');
-            expect(prompt).toContain('GEEN CODE TENZIJ');
+            expect(prompt).toContain('GEEN CODE tenzij');
         });
 
         test('should return year 2 prompt for level 2', () => {
             const prompt = createBasePrompt(2);
-            expect(prompt).toContain('2nd year');
-            expect(prompt).toContain('Best practices');
+            expect(prompt).toContain('2e jaars');
+            expect(prompt).toContain('praktijk');
         });
 
         test('should return year 3 prompt for level 3', () => {
             const prompt = createBasePrompt(3);
-            expect(prompt).toContain('3rd year');
+            expect(prompt).toContain('3e jaars');
             expect(prompt).toContain('Advanced patterns');
         });
 
         test('should return year 4 prompt for level 4', () => {
             const prompt = createBasePrompt(4);
-            expect(prompt).toContain('4th year');
-            expect(prompt).toContain('expert');
+            expect(prompt).toContain('4e jaars');
+            expect(prompt).toContain('Cutting-edge');
         });
 
         test('should return year 2 prompt as default for unknown level', () => {
             const prompt = createBasePrompt(99);
-            expect(prompt).toContain('2nd year');
+            expect(prompt).toContain('2e jaars');
         });
     });
 

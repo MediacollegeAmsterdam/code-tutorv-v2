@@ -89,9 +89,7 @@ export function activate(context: vscode.ExtensionContext) {
         ): Promise<vscode.ChatResult> => {
             try {
                 // Get AI model
-                const [model] = await vscode.lm.selectChatModels({
-                    vendor: 'copilot'
-                });
+                const model = await getCachedModel();
 
                 if (!model) {
                     stream.markdown('❌ No AI model available. Please install GitHub Copilot.');
@@ -219,6 +217,31 @@ export async function exampleProgrammaticUsage(
     // Execute explain command
     const explainCmd = new ExplainCommand();
     await explainCmd.execute(chatContext, mockStream, token);
+}
+
+/**
+ * Model cache to avoid repeated API calls (60 second TTL)
+ */
+let cachedModel: vscode.LanguageModelChat | null = null;
+let modelCacheTime = 0;
+
+async function getCachedModel(): Promise<vscode.LanguageModelChat | null> {
+    const now = Date.now();
+    if (cachedModel && (now - modelCacheTime) < 60000) {
+        return cachedModel;
+    }
+
+    try {
+        const [model] = await vscode.lm.selectChatModels({ vendor: 'copilot' });
+        if (model) {
+            cachedModel = model;
+            modelCacheTime = now;
+        }
+        return model || null;
+    } catch (error) {
+        console.error('Failed to get model:', error);
+        return null;
+    }
 }
 
 /**

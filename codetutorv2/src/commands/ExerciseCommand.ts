@@ -61,75 +61,32 @@ export class ExerciseCommand implements ICommand {
         stream.markdown(`## 🎯 Oefening aan het genereren...\n\n`);
         try {
             const difficulty = this.getDifficultyForYear(context.yearLevel);
-            const difficultyText = this.getDifficultyDescription(context.yearLevel);
 
             // Extract the topic
             let topic = context.request.prompt;
             topic = topic.replace(/geef\s+me\s+een\s+oefening\s+over\s+|give\s+me\s+an\s+exercise\s+about\s+|geef\s+een\s+oefening\s+over\s+/gi, '').trim();
 
-            // Generate BOTH example and exercise in ONE request
-            const basePrompt = `Je bent een expert programmeerleraar. Maak een oefening voor ${difficultyText} studenten over: "${topic}"
+            // OPTIMIZED: Much shorter prompt - 60% less tokens
+            const basePrompt = `Je bent een programmeerleraar. Maak een korte oefening voor ${difficulty} niveau over: "${topic}"
 
-JE MOET DEZE EXACTE STRUCTUUR VOLGEN - GEEN UITZONDERINGEN:
-
-STAP 1 - Begin met deze sectie:
-
-
+Format exakt:
 ### 💻 Voorbeeld
-
-\`\`\`${languages}
-// [Schrijf hier 5-15 regels werkende code voor ${difficulty} niveau]
-// [Met Nederlands commentaar]
+\`\`\`javascript
+// [code voorbeeld - 5 regels max]
 \`\`\`
-
-STAP 2 - Daarna volgt dit:
-
----
 
 ### 📝 Oefening
+**${topic}** - ${difficulty} niveau
 
-## 📚 ${topic.charAt(0).toUpperCase() + topic.slice(1)} Oefening
+**Doel:** [1 zin]
 
-**Niveau:** ${difficulty.toUpperCase()}  
-**Geschatte tijd:** 45-60 minuten
+**Opdracht:** [2-3 zinnen wat te doen]
 
-### 🎯 Lesdoelen
-- Lesdoel 1
-- Lesdoel 2  
-- Lesdoel 3
+**Hints:**
+- [Hint 1]
+- [Hint 2]
 
-### 📖 Context & Inleiding
-Uitleg waarom dit belangrijk is.
-
-### 🚀 Hoofd Opdracht
-Wat de student moet doen.
-
-### 📋 Stap-voor-stap
-1. **Voorbereiding**: Setup stap
-2. **Taak 1**: Eerste taak
-3. **Taak 2**: Tweede taak
-4. **Taak 3**: Derde taak
-
-### 💡 Hints
-- **Voor taak 1**: Hint 1
-- **Voor taak 2**: Hint 2
-- **Voor taak 3**: Hint 3
-
-### 📚 Nuttige Resources
-- Resource 1
-- Resource 2
-
-### ✅ Klaar om in te dienen?
-- [ ] Alle taken afgemaakt
-- [ ] Code schoon en opgemaakt
-- [ ] Getest en werkend
-
-NU GENEREER JE HET ANTWOORD MET ECHTE CODE EN INHOUD:
-
-**Output:**
-\`\`\`
-[Toon hier de output van de code]
-\`\`\``;
+Geen lange uitleg, alleen essentieel.`;
 
             const messages = buildChatMessages(
                 basePrompt,
@@ -143,8 +100,7 @@ NU GENEREER JE HET ANTWOORD MET ECHTE CODE EN INHOUD:
                 for await (const fragment of response.text) {
                     stream.markdown(fragment);
                 }
-                stream.markdown(`\n\n---\n\n`);
-                stream.markdown(`💡 **Tip:** Vraag me om /feedback als je hulp nodig hebt bij het oplossen!\n`);
+                stream.markdown(`\n\n💡 Vraag /feedback voor hulp!\n`);
             }
 
             context.trackProgress('exercise');
@@ -166,23 +122,18 @@ NU GENEREER JE HET ANTWOORD MET ECHTE CODE EN INHOUD:
         stream.markdown(`## 🎯 Oefeningen\n\n`);
 
         try {
-            const basePrompt = `Je bent een programmeerleraar. Geef 3-4 interessante oefening suggesties die goed passen voor ${this.getDifficultyDescription(context.yearLevel)} students.
+            // OPTIMIZED: Much shorter suggestion prompt
+            const basePrompt = `Geef 3-4 oefening suggesties voor ${this.getDifficultyForYear(context.yearLevel)} niveau.
 
-Maak het leuk en inspirerend. Kort en direct. Gebruik deze format:
-
-### 💪 Suggesties voor jou:
-
-**1. [Onderwerp 1]** - [1 zin wat je leert]
-**2. [Onderwerp 2]** - [1 zin wat je leert]
-**3. [Onderwerp 3]** - [1 zin wat je leert]
-**4. [Onderwerp 4]** - [1 zin wat je leert]
-
-💬 Zeg bijvoorbeeld: "Geef me een oefening over loops" en ik maak er één voor je!`;
+Format:
+**1. [Onderwerp]** - [1 zin wat je leert]
+**2. [Onderwerp]** - [1 zin wat je leert]
+**3. [Onderwerp]** - [1 zin wat je leert]`;
 
             const messages = buildChatMessages(
                 basePrompt,
                 context.chatContext,
-                'Geef suggesties voor interessante oefeningen',
+                'Geef suggesties',
                 ''
             );
 

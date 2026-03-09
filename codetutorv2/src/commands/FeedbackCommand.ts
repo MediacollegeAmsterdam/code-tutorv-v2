@@ -29,7 +29,8 @@ export class FeedbackCommand implements ICommand {
     private feedbackSessions: Map<string, {
         attempts: number;
         lastFeedbackLevel: string;
-        previousFeedback: string[]
+        previousFeedback: string[];
+        codeHash: string;
     }> = new Map();
 
     async execute(
@@ -59,16 +60,10 @@ export class FeedbackCommand implements ICommand {
         context.trackProgress('feedback');
     }
 
+    // ...existing code...
+
     /**
      * Generate progressive feedback based on attempt number
-     *
-     * @param issue - Student's description of the problem
-     * @param code - The code to provide feedback on
-     * @param language - Programming language
-     * @param model - AI model to use
-     * @param attempt - Attempt number (1-4+)
-     * @param sessionId - Session tracking ID
-     * @param token - Cancellation token
      */
     private async generateProgressiveFeedback(
         issue: string,
@@ -81,40 +76,49 @@ export class FeedbackCommand implements ICommand {
     ): Promise<string> {
         const sid = sessionId || `session-${Date.now()}`;
         let session = this.feedbackSessions.get(sid);
+        const codeHash = this.hashCode(code);
 
         if (!session) {
-            session = {attempts: 0, lastFeedbackLevel: 'initial', previousFeedback: []};
+            session = {attempts: 0, lastFeedbackLevel: 'initial', previousFeedback: [], codeHash};
             this.feedbackSessions.set(sid, session);
+        }
+
+        // If code hasn't changed, return cached feedback
+        if (session.codeHash === codeHash && session.previousFeedback.length > 0 && attempt <= session.attempts) {
+            return session.previousFeedback[session.attempts - 1] || 'Geen feedback beschikbaar.';
         }
 
         session.attempts++;
 
-        // Level 1: Initial Feedback (Attempt 1)
+        // Level 1: Initial Feedback (Attempt 1) - OPTIMIZED
         if (session.attempts === 1) {
-            const initialPrompt = `Je bent een programmeer coach. Een student heeft een probleem met hun code.
-
-Probleem: ${issue}
+            const initialPrompt = `Je bent coach. Student probleem: ${issue}
 
 Code:
 \`\`\`${language}
 ${code}
 \`\`\`
 
-Geef korte, begrijpelijke initiële feedback die:
-1. Het probleem duidelijk identificeert
-2. Een gerichte vraag stelt om ze zelf na te denken
-3. Hen aanmoedigt zelf de oplossing te zoeken
-4. Maximaal 150 woorden
-
-Spreek als een normale Nederlander, zonder emojis.`;
+Geef kort feedback (max 100 woorden):
+1. Het probleem identificeren
+2. 1 gericht vraag om zelf op te lossen
+Geen Code, geen uitleg, enkel vragen.`;
 
             const messages = [vscode.LanguageModelChatMessage.User(initialPrompt)];
 
             try {
                 const response = await model.sendRequest(messages, {}, token);
                 let fullResponse = '';
+                let charCount = 0;
+                const maxChars = 1200; // OPTIMIZED: Limit to ~300 tokens
+
                 for await (const fragment of response.text) {
+                    if (charCount + fragment.length > maxChars) {
+                        fullResponse += fragment.substring(0, maxChars - charCount) + '\n\n[...]';
+                        break;
+                    }
                     fullResponse += fragment;
+                    charCount += fragment.length;
                 }
 
                 session.lastFeedbackLevel = 'initial';
@@ -125,33 +129,35 @@ Spreek als een normale Nederlander, zonder emojis.`;
             }
         }
 
-        // Level 2: Specific Tips (Attempts 2-3)
+        // Level 2: Specific Tips (Attempts 2-3) - OPTIMIZED
         if (session.attempts === 2 || session.attempts === 3) {
-            const tipsPrompt = `Je bent een programmeer coach. Een student snapt hun probleem nog niet.
-
-Origineel probleem: ${issue}
+            const tipsPrompt = `Coach antwoord op: ${issue}
 
 Code:
 \`\`\`${language}
 ${code}
 \`\`\`
 
-Geef nu concrete tips:
-1. 3-4 specifieke dingen om te controleren
-2. Debugtechnieken die helpen (bijv. logging)
-3. Vragen om hun denkproces te structureren
-4. Aanmoediging zonder direct antwoord te geven
-5. Maximaal 200 woorden
-
-Spreek als een normale Nederlander, zonder emojis.`;
+Geef 3 concrete tips (max 120 woorden):
+- Wat te checken
+- Debug techniek
+- Volgende stap`;
 
             const messages = [vscode.LanguageModelChatMessage.User(tipsPrompt)];
 
             try {
                 const response = await model.sendRequest(messages, {}, token);
                 let fullResponse = '';
+                let charCount = 0;
+                const maxChars = 1500; // OPTIMIZED: Limit response length
+
                 for await (const fragment of response.text) {
+                    if (charCount + fragment.length > maxChars) {
+                        fullResponse += fragment.substring(0, maxChars - charCount) + '\n\n[...]';
+                        break;
+                    }
                     fullResponse += fragment;
+                    charCount += fragment.length;
                 }
 
                 session.lastFeedbackLevel = 'tips';
@@ -162,48 +168,43 @@ Spreek als een normale Nederlander, zonder emojis.`;
             }
         }
 
-        // Level 3: Full Example (Attempt 4+)
+        // Level 3: Full Example (Attempt 4+) - OPTIMIZED
         if (session.attempts >= 4) {
-            const examplePrompt = `Je bent een programmeer coach. Een student snapt het nog steeds niet. Nu geven we een volledig voorbeeld.
+            const examplePrompt = `Geef werkend voorbeeld voor: ${issue}
 
-Origineel probleem: ${issue}
-
-Originele code:
 \`\`\`${language}
 ${code}
 \`\`\`
 
-Geef nu:
-1. Een volledig werkend voorbeeld in ${language}
-2. Regel-voor-regel uitleg van het voorbeeld
-3. De kernprincipes die je toepast
-4. Hoe ze dit patroon elders kunnen toepassen
-5. 300-400 woorden max
-
-Format:
-**Werkend Voorbeeld:**
+Output (250 woorden max):
 \`\`\`${language}
-[code hier]
+[werkend code voorbeeld]
 \`\`\`
 
-**Uitleg:**
-[uitleg hier]
-
-Spreek als een normale Nederlander, zonder emojis.`;
+Hoe het werkt:
+[korte uitleg]`;
 
             const messages = [vscode.LanguageModelChatMessage.User(examplePrompt)];
 
             try {
                 const response = await model.sendRequest(messages, {}, token);
                 let fullResponse = '';
+                let charCount = 0;
+                const maxChars = 2000; // OPTIMIZED: Limit response length
+
                 for await (const fragment of response.text) {
+                    if (charCount + fragment.length > maxChars) {
+                        fullResponse += fragment.substring(0, maxChars - charCount) + '\n\n[...]';
+                        break;
+                    }
                     fullResponse += fragment;
+                    charCount += fragment.length;
                 }
 
                 session.lastFeedbackLevel = 'example';
                 session.previousFeedback.push(fullResponse);
 
-                // Clean up old sessions after 30 seconds
+                // Clean up after 30 seconds
                 setTimeout(() => {
                     this.feedbackSessions.delete(sid);
                 }, 30000);
@@ -215,6 +216,19 @@ Spreek als een normale Nederlander, zonder emojis.`;
         }
 
         return 'Vraag opnieuw - ik kan je beter helpen';
+    }
+
+    /**
+     * Simple hash function for code deduplication
+     */
+    private hashCode(str: string): string {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32bit integer
+        }
+        return hash.toString();
     }
 }
 

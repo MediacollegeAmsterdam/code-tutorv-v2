@@ -5,6 +5,7 @@
 import * as vscode from 'vscode';
 import {CodeContext} from '../types';
 
+
 /**
  * Get code context from active editor
  * Returns selected text or visible code with markdown formatting
@@ -101,16 +102,17 @@ export async function getValidModel(model: vscode.LanguageModelChat | undefined)
  */
 export function createBasePrompt(yearLevel: number): string {
     const basePrompts: Record<number, string> = {
-        1: 'Je bent een hulpzame programming coach voor eerstejaars studenten. Zorg dat je: 1) ALLES uitlegt - geen aannames over voorkennis, 2) Kleine stappen zet, 3) Veel voorbeelden geeft, 4) Moeilijke concepten vergelijkt met dagelijks leven, 5) Veel aanmoediging geeft. GEEN CODE TENZIJ HINTS GEVRAAGD. Het is oke als dingen simpel lijken - fundamentals zijn belangrijk! Spreek Nederlands.',
-        2: 'Je bent een programming coach voor 2nd year studenten. Ze hebben basics, dus focus op: 1) Praktische projecten, 2) Best practices, 3) Code kwaliteit, 4) Kleine design patterns. Leg nog steeds uit maar aannames kunnen hoger. GEEN CODE TENZIJ HINTS. Spreek Nederlands.',
-        3: 'Je bent een programming mentor voor 3rd year studenten. Ze kunnen zelfstandig code schrijven. Focus op: 1) Advanced patterns, 2) System design, 3) Performance optimization, 4) Best practices op scale. Kan technische termen gebruiken. GEEN CODE TENZIJ HINTS. Spreek Nederlands.',
-        4: 'Je bent een expert programming mentor voor 4th year studenten / professionals. Focus op: 1) Research topics, 2) Cutting-edge tech, 3) Innovation, 4) Specialized domains. Kan aannames doen over diep kennis. GEEN CODE TENZIJ HINTS. Spreek Nederlands.'
+        1: 'Je bent programmeercoach voor eerstejaars. Leg ALLES uit, geen aannames. Kleine stappen, veel voorbeelden. GEEN CODE tenzij gevraagd. Nederlands.',
+        2: 'Je bent programmeercoach voor 2e jaars. Focus op praktijk, best practices. GEEN CODE tenzij hints. Nederlands.',
+        3: 'Je bent programmeermentoor voor 3e jaars. Advanced patterns, systeem design. GEEN CODE tenzij hints. Nederlands.',
+        4: 'Je bent expert mentor voor 4e jaars/professionals. Cutting-edge, onderzoek. GEEN CODE tenzij hints. Nederlands.'
     };
     return basePrompts[yearLevel] || basePrompts[2];
 }
 
 /**
- * Build chat messages array with context history
+ * Build chat messages array with context history - OPTIMIZED
+ * Only includes last 2 history items instead of all history
  */
 export function buildChatMessages(
     basePrompt: string,
@@ -122,11 +124,11 @@ export function buildChatMessages(
         vscode.LanguageModelChatMessage.User(basePrompt)
     ];
 
-    // Add previous messages from history
+    // OPTIMIZED: Only last 2 messages from history to reduce tokens
     const previousMessages = Array.isArray(chatContext?.history)
-        ? chatContext.history.filter(
-            (h: any) => (vscode.ChatResponseTurn ? h instanceof vscode.ChatResponseTurn : false)
-        )
+        ? chatContext.history
+            .filter((h: any) => (vscode.ChatResponseTurn ? h instanceof vscode.ChatResponseTurn : false))
+            .slice(-2) // Only last 2 messages
         : [];
 
     previousMessages.forEach(m => {
@@ -135,7 +137,9 @@ export function buildChatMessages(
             const mdPart = r as vscode.ChatResponseMarkdownPart;
             fullMessage += mdPart.value?.value || '';
         });
-        messages.push(vscode.LanguageModelChatMessage.Assistant(fullMessage));
+        if (fullMessage.length < 500) { // Skip very long responses
+            messages.push(vscode.LanguageModelChatMessage.Assistant(fullMessage));
+        }
     });
 
     // Add current user message with code context
@@ -184,7 +188,6 @@ export async function sendChatRequest(
                     console.warn(`[Chat Utils] Fallback model ${candidate.name} also failed:`, fallbackErr);
                 }
             }
-
             stream.markdown('❌ Geen geschikt AI-model werkte. Kies handmatig een ander model.');
             return null;
         } else {
