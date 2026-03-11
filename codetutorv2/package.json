@@ -71,6 +71,10 @@
           {
             "name": "duck",
             "description": "Rubber duck debugging with Socratic hints - guided learning without direct answers"
+          },
+          {
+            "name": "review",
+            "description": "Get structured feedback on your completed exercise with targeted improvement tips"
           }
         ]
       }

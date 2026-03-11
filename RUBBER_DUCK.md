@@ -1,6 +1,6 @@
-# Rubber Duck & Targeted Exercises
+# Rubber Duck, Targeted Exercises & Exercise Review
 
-AI-powered Socratic debugging and concept-targeted exercises.
+AI-powered learning features: Socratic debugging, concept-targeted exercises, and structured exercise review.
 
 ## Commands
 
@@ -16,7 +16,7 @@ AI-powered Socratic debugging and concept-targeted exercises.
 - Detects progress and ends sessions after 8 hints without progress
 - **Never provides direct code answers**
 
-### /exercise - Targeted Practice (NEW!)
+### /exercise - Targeted Practice
 
 ```
 @tutor /exercise [select code first]
@@ -32,6 +32,19 @@ Or ask for general exercises:
 ```
 @tutor /exercise loops
 ```
+
+### /review - Exercise Feedback (NEW!)
+
+```
+@tutor /review [what exercise was this for]
+```
+
+- Structured feedback on completed exercises
+- Highlights what you did well (✅)
+- Identifies specific issues (❌)
+- Provides targeted improvement tips (💡)
+- Confidence score (not a grade)
+- Year-level adapted feedback
 
 ## Features
 
@@ -51,62 +64,90 @@ Or ask for general exercises:
 - **Year-Level Adapted** - Difficulty matches your year
 - **With Examples** - Shows patterns without giving away answers
 
+### Exercise Review (/review)
+
+- **Structured Feedback** - ✅ Good, ❌ Issues, 💡 Tips
+- **Exercise Context** - Reviews against what was asked
+- **No Spoilers** - Tips without full solutions
+- **Confidence Scoring** - Helps assess understanding
+- **Attempt Tracking** - Monitors practice progress
+- **Year-Level Adapted** - Feedback matches difficulty
+
 ## How They Work Together
 
-1. Student has buggy code
-2. Uses `/duck` to work through debugging (asks guiding questions)
-3. After solving, uses `/exercise` with the same code to practice that concept
-4. Generates targeted exercises for strengthening understanding
+**Complete Learning Cycle:**
+
+1. Student uses `/exercise` to get a targeted exercise (based on code or topic)
+2. Student completes the exercise
+3. Student uses `/review` to get structured feedback on the exercise
+4. If stuck while working on the exercise, uses `/duck` for Socratic guidance
+5. After fixing issues, uses `/review` again to verify improvements
 
 ## Files
 
-**Duck Feature:**
+**Core Features:**
 
 - `src/commands/DuckCommand.ts` - Socratic debugging
+- `src/commands/ExerciseCommand.ts` - Exercise generation with code analysis
+- `src/commands/ReviewCommand.ts` - Exercise review with feedback
 - `src/core/DuckContext.ts` - Session state (98.59% coverage)
-- `src/core/duck-prompts.ts` - Socratic prompts
-
-**Exercise Enhancement:**
-
-- `src/commands/ExerciseCommand.ts` - Now with code analysis
+- `src/core/duck-prompts.ts` - Socratic prompt templates
 
 **Tests:**
 
 - `src/test/commands/DuckCommand.test.ts` - 40+ tests
 - `src/test/core/DuckContext.test.ts` - 30+ tests
+- `src/test/commands/ReviewCommand.test.ts` - 15+ tests
 
 ## Testing
 
 ```bash
 npm test -- --testNamePattern="Duck"     # Duck tests
+npm test -- --testNamePattern="Review"   # Review tests
 npm test -- --testNamePattern="Exercise" # Exercise tests
 npm test:coverage                         # Full coverage
 ```
 
-**Result:** 120+ tests passing, 70% coverage
+**Result:** 130+ tests passing, 71% coverage
 
-## Examples
-
-### Using /duck for debugging
+## Example: Complete Learning Cycle
 
 ```
-You: @tutor /duck my loop isn't working
-AI:  What does your loop do? What's the first element it should process?
-You: The first element at index 0, should sum them...
-AI:  Good, you noticed it should process from 0. How does your loop start?
-```
+1. EXERCISE GENERATION
+   You: @tutor /exercise [select array code]
+   AI:  Found concepts: array iteration, indexing
+        Exercise 1: Create loop summing all elements
+        Exercise 2: Find maximum value in array
 
-### Using /exercise for targeted practice
+2. EXERCISE COMPLETION
+   [You write your solution code]
 
-```
-You: @tutor /exercise [select loop code]
-AI:  Found concepts: array iteration, loop conditions
-     Here are exercises to practice:
-     1. Iterate backward through array
-     2. Filter array with condition
-     3. Sum every other element
+3. EXERCISE REVIEW
+   You: @tutor /review create loop that sums array elements
+   AI:  ✅ What good is:
+        - Correct loop structure
+        - Good variable naming
+        
+        ❌ What's wrong:
+        - Off-by-one error: loop starts at 1 instead of 0
+        
+        💡 How to improve:
+        - Try: for(let i = 0; i < array.length; i++)
+        - Test with console.log to verify sum
+        
+        📊 Confidence: 7/10
+
+4. DEBUGGING WITH DUCK (if stuck)
+   You: @tutor /duck my sum keeps being wrong
+   AI:  What index should the first element have?
+   You: Index 0...
+   AI:  Good. What index does your loop start with?
+
+5. REVIEW AGAIN
+   You: @tutor /review [fixed code]
+   AI:  ✅ Perfect! Now you have the correct logic
 ```
 
 ---
 
-Status: Production ready. All tests passing. Zero errors.
+Status: Production ready. All 130+ tests passing. Zero errors.

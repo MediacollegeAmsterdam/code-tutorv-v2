@@ -10,6 +10,7 @@ import {
     ExerciseCommand,
     LevelCommand,
     DuckCommand,
+    ReviewCommand,
     ChatContext,
     ICommand,
     CommandServices,
@@ -67,15 +68,17 @@ export function activate(context: vscode.ExtensionContext) {
     const exerciseCmd = new ExerciseCommand();
     const levelCmd = new LevelCommand();
     const duckCmd = new DuckCommand();
+    const reviewCmd = new ReviewCommand();
 
     commands.set(explainCmd.name, explainCmd);
     commands.set(feedbackCmd.name, feedbackCmd);
     commands.set(exerciseCmd.name, exerciseCmd);
     commands.set(levelCmd.name, levelCmd);
     commands.set(duckCmd.name, duckCmd);
+    commands.set(reviewCmd.name, reviewCmd);
 
     // Also register aliases
-    [explainCmd, feedbackCmd, exerciseCmd, levelCmd, duckCmd].forEach(cmd => {
+    [explainCmd, feedbackCmd, exerciseCmd, levelCmd, duckCmd, reviewCmd].forEach(cmd => {
         if ('aliases' in cmd && cmd.aliases) {
             cmd.aliases.forEach((alias: string) => commands.set(alias, cmd));
         }
@@ -142,6 +145,7 @@ export function activate(context: vscode.ExtensionContext) {
                     stream.markdown(`- \`/explain\` - Explain code or concepts\n`);
                     stream.markdown(`- \`/feedback\` - Get progressive feedback on your code\n`);
                     stream.markdown(`- \`/exercise\` - Generate or list exercises\n`);
+                    stream.markdown(`- \`/review\` - Get structured feedback on your exercise\n`);
                     stream.markdown(`- \`/duck\` - Rubber duck debugging with Socratic hints\n`);
                     stream.markdown(`- \`/level\` - Change your difficulty level\n`);
                     return { metadata: { command: 'help' } };
