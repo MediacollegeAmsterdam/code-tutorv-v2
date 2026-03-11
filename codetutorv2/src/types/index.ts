@@ -68,6 +68,33 @@ export interface FeedbackSession {
 }
 
 /**
+ * Rubber duck session tracking
+ */
+export interface RubberDuckSession {
+    sessionId: string;
+    startedAt: string;
+    codeSnapshot: string;
+    codeHash: string;
+    hintsGiven: DuckHint[];
+    questionsAsked: string[];
+    attempts: number;
+    maxAttempts?: number;
+    conversationDepth: number;
+}
+
+/**
+ * Individual hint provided during duck session
+ */
+export interface DuckHint {
+    timestamp: string;
+    question: string;
+    codeContext: string;
+    hintLevel: 'guidance' | 'debugging_tip' | 'concept_clarification';
+    studentResponse?: string;
+    responseTime?: number;
+}
+
+/**
  * Services interface that commands depend on
  */
 export interface CommandServices {
