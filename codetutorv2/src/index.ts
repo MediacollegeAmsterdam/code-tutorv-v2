@@ -9,10 +9,12 @@ export { ExplainCommand } from './commands/ExplainCommand';
 export { FeedbackCommand } from './commands/FeedbackCommand';
 export { ExerciseCommand } from './commands/ExerciseCommand';
 export { LevelCommand } from './commands/LevelCommand';
+export { DuckCommand } from './commands/DuckCommand';
 
 // Core
 export { ICommand } from './core/ICommand';
 export { ChatContext } from './core/ChatContext';
+export { DuckContext } from './core/DuckContext';
 export {
     getCodeContext,
     isAutoModel,

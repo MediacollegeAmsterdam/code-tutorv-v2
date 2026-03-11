@@ -67,6 +67,10 @@
           {
             "name": "level",
             "description": "Change your difficulty level (1-4 based on your year)"
+          },
+          {
+            "name": "duck",
+            "description": "Rubber duck debugging with Socratic hints - guided learning without direct answers"
           }
         ]
       }

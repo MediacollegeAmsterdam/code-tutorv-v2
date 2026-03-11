@@ -23,11 +23,11 @@ export interface ICommand {
 	 * Execute the command logic
 	 * @param context Shared chat context with state and services
 	 * @param stream Chat response stream for output
-	 * @param token Cancellation token
-	 */
-	execute(
-		context: ChatContext,
-		stream: vscode.ChatResponseStream,
+     * @param token Cancellation token
+     */
+    execute(
+        context: ChatContext,
+        stream: vscode.ChatResponseStream,
 		token: vscode.CancellationToken
 	): Promise<void>;
 

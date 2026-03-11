@@ -162,6 +162,14 @@ export class LevelCommand implements ICommand {
 	}
 
 	/**
+	 * Get current level for a user
+	 */
+	public GetLevel(context: ChatContext): number {
+		const userProfile = context.getUserProfile();
+		return userProfile?.yearLevel || 2; // Default to level 2
+	}
+
+	/**
 	 * Get description for level
 	 */
 	private getLevelDescription(level: number): string {
