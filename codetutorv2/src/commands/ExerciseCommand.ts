@@ -63,15 +63,46 @@ export class ExerciseCommand implements ICommand {
         try {
             const difficulty = this.getDifficultyForYear(context.yearLevel);
 
-            // Extract the topic
+            // Extract code context if available
+            const codeContext = context.codeContext?.code || '';
+            const hasCode = codeContext.length > 0;
+
+            // Extract the topic or use code concepts
             let topic = context.request.prompt;
             topic = topic.replace(/geef\s+me\s+een\s+oefening\s+over\s+|give\s+me\s+an\s+exercise\s+about\s+|geef\s+een\s+oefening\s+over\s+/gi, '').trim();
 
             console.log(`[${timestamp}] [EXERCISE] Generating exercise for topic: "${topic}"`);
             console.log(`[${timestamp}] [EXERCISE] Difficulty level: ${difficulty}`);
+            console.log(`[${timestamp}] [EXERCISE] Has code context: ${hasCode}`);
 
             // OPTIMIZED: Much shorter prompt - 60% less tokens
-            const basePrompt = `Je bent een programmeerleraar. Maak een korte oefening voor ${difficulty} niveau over: "${topic}"
+            const basePrompt = hasCode
+                ? `Je bent een programmeerleraar. Analyseer deze code en maak oefeningen voor de CONCEPTS die erin voorkomen.
+
+Code:
+${codeContext}
+
+Maak 2-3 oefeningen op ${difficulty} niveau voor deze concepts.
+
+Format exakt:
+### 💻 Voorbeeld
+\`\`\`javascript
+// [code voorbeeld - 5 regels max]
+\`\`\`
+
+### 📝 Oefening
+**[Concept]** - ${difficulty} niveau
+
+**Doel:** [1 zin]
+
+**Opdracht:** [2-3 zinnen wat te doen]
+
+**Hints:**
+- [Hint 1]
+- [Hint 2]
+
+Focus op de CONCEPTS uit de code, niet op het fixen van bugs. Geen lange uitleg, alleen essentieel.`
+                : `Je bent een programmeerleraar. Maak een korte oefening voor ${difficulty} niveau over: "${topic}"
 
 Format exakt:
 ### 💻 Voorbeeld
