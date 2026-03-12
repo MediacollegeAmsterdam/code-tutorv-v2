@@ -29,6 +29,8 @@ An AI-powered programming tutor for VS Code that helps students learn to code wi
 
 📋 **Targeted Learning**
 - Generate exercises focused on specific code concepts
+- Exercises automatically saved as markdown files for persistent reference
+- Easy switching between exercise file and your code
 - Get structured feedback comparing your solution to requirements
 - Confidence scoring to assess understanding
 - Complete learning cycle: Exercise → Complete → Review → Improve
@@ -67,7 +69,9 @@ Progressive feedback using the Socratic method (hints → tips → examples).
 ```
 - Select code in editor for concept-targeted exercises
 - Or ask for exercises on a specific topic
-- Includes examples without spoilers
+- Includes examples and code snippets
+- **Automatically creates a markdown file** in the `exercises/` folder
+- Open the exercise file to work alongside your code
 
 **Rubber Duck Debugging:**
 ```
@@ -98,10 +102,31 @@ Set difficulty 1-4 based on your year/experience.
 ### Complete Learning Cycle
 
 1. Generate an exercise: `@tutor /exercise [topic or code]`
-2. Complete the exercise
-3. Review your work: `@tutor /review [what exercise was this]`
-4. If stuck: `@tutor /duck [describe your problem]`
-5. Review again: `@tutor /review [your improved code]`
+2. An exercise markdown file opens automatically in a side panel
+3. Switch between the exercise file and your code to work on it
+4. Complete the exercise in your code editor
+5. Review your work: `@tutor /review [what exercise was this]`
+6. If stuck: `@tutor /duck [describe your problem]`
+7. Review again: `@tutor /review [your improved code]`
+
+### Exercise Files
+
+Each time you generate an exercise, Code Tutor automatically creates a markdown file:
+- **Location:** `exercises/` folder in your workspace
+- **Format:** `exercise_[topic]_[difficulty]_[date]_[time].md`
+- **Display:** Opens in VS Code's markdown preview for beautiful, formatted view
+- **Features:**
+  - Complete exercise with learning goals and instructions
+  - Code examples and hints
+  - Quick access to get feedback (`/feedback`) or hints (`/duck`)
+  - Easy switching between exercise preview and your code files
+
+**Example:** Running `@tutor /exercise loops` creates:
+```
+exercises/exercise_loops_beginner_2026-03-12_13-28-45.md
+```
+
+And opens it in markdown preview so you can see the exercise clearly while coding!
 
 ### Difficulty Levels
 
@@ -153,6 +178,7 @@ New features released:
 - **Rubber Duck Command** (`/duck`) - Socratic debugging with hints
 - **Targeted Exercises** - `/exercise` now analyzes your code for concept-focused exercises
 - **Exercise Review** (`/review`) - Structured feedback on completed exercises
+- **Exercise Markdown Files** - Exercises automatically save as `.md` files in the `exercises/` folder for easy reference while coding
 - Improved hint escalation system
 - Extended test suite (130+ tests)
 

@@ -236,10 +236,13 @@ ${content}
             await vscode.workspace.fs.writeFile(filePath, encoded);
             console.log('[EXERCISE] File written successfully');
 
-            // Open the file in the editor
-            console.log('[EXERCISE] Opening file in editor...');
+            // Open the file in markdown preview mode
+            console.log('[EXERCISE] Opening file in markdown preview...');
             const doc = await vscode.workspace.openTextDocument(filePath);
-            await vscode.window.showTextDocument(doc, vscode.ViewColumn.Beside);
+
+            // Open in markdown preview (split view)
+            await vscode.commands.executeCommand('markdown.showPreview', filePath);
+
             console.log(`[EXERCISE] Created and opened exercise file: ${fileName}`);
 
             // Show success notification
