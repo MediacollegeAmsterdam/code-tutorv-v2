@@ -172,7 +172,7 @@ npm test:coverage                     # Coverage report
 
 ## Release Notes
 
-### 0.0.4
+### 0.0.2
 
 New features released:
 - **Rubber Duck Command** (`/duck`) - Socratic debugging with hints
