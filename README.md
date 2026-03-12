@@ -140,7 +140,7 @@ npm test:coverage                     # Coverage report
 
 **Current Status:** 130+ tests passing, 71% code coverage
 
-## Known Issues
+## Externaly Required
 
 - Requires GitHub Copilot to be installed and activated
 - Full functionality depends on Copilot API availability

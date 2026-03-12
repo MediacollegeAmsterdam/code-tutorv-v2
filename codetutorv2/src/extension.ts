@@ -182,7 +182,7 @@ export async function exampleProgrammaticUsage(
     services: CommandServices
 ) {
     // Create a mock request
-    const mockRequest: vscode.ChatRequest = {
+        const mockRequest: vscode.ChatRequest = {
         prompt: 'Explain what a loop is',
         command: 'explain',
         references: [],

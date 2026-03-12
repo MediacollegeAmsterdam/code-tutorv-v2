@@ -32,22 +32,9 @@ export class ExerciseCommand implements ICommand {
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<void> {
-        const userQuery = context.request.prompt.toLowerCase().trim();
-
-        // Check if user is asking to generate an exercise
-        const isGenerating = userQuery.length > 3 &&
-            (userQuery.includes('geef') || userQuery.includes('maak') ||
-                userQuery.includes('give') || userQuery.includes('create') ||
-                userQuery.includes('generate') || userQuery.includes('oefening') ||
-                userQuery.includes('assignment') || userQuery.includes('exercise'));
-
-        if (!isGenerating) {
-            // Generate a new exercise based on the user's request
-            await this.generateExercise(context, stream, token);
-        } else {
-            // Show exercise suggestions
-            await this.showSuggestions(context, stream, token);
-        }
+        // Always generate an exercise when this command is called
+        // The user explicitly asked for /exercise
+        await this.generateExercise(context, stream, token);
     }
 
     /**
@@ -69,22 +56,27 @@ export class ExerciseCommand implements ICommand {
 
             // Extract the topic or use code concepts
             let topic = context.request.prompt;
-            topic = topic.replace(/geef\s+me\s+een\s+oefening\s+over\s+|give\s+me\s+an\s+exercise\s+about\s+|geef\s+een\s+oefening\s+over\s+/gi, '').trim();
+            topic = topic.replace(/geef\s+me\s+een\s+oefening\s+over\s+|give\s+me\s+an\s+exercise\s+about\s+|geef\s+een\s+oefening\s+over\s+|exercise|oefening/gi, '').trim();
+
+            // If no specific topic provided, use code-based or general topic
+            if (!topic || topic.length === 0) {
+                topic = hasCode ? 'het concept uit deze code' : 'programmeren';
+            }
 
             console.log(`[${timestamp}] [EXERCISE] Generating exercise for topic: "${topic}"`);
             console.log(`[${timestamp}] [EXERCISE] Difficulty level: ${difficulty}`);
             console.log(`[${timestamp}] [EXERCISE] Has code context: ${hasCode}`);
 
-            // OPTIMIZED: Much shorter prompt - 60% less tokens
+            // OPTIMIZED: Better prompt for full exercises
             const basePrompt = hasCode
-                ? `Je bent een programmeerleraar. Analyseer deze code en maak oefeningen voor de CONCEPTS die erin voorkomen.
+                ? `Je bent een programmeerleraar. Analyseer deze code en maak educatieve oefeningen voor de CONCEPTS die erin voorkomen.
 
 Code:
 ${codeContext}
 
-Maak 2-3 oefeningen op ${difficulty} niveau voor deze concepts.
+Maak 1-2 volledige oefeningen op ${difficulty} niveau voor deze concepts.
 
-Format exakt:
+Format exact:
 ### 💻 Voorbeeld
 \`\`\`javascript
 // [code voorbeeld - 5 regels max]
@@ -93,18 +85,25 @@ Format exakt:
 ### 📝 Oefening
 **[Concept]** - ${difficulty} niveau
 
-**Doel:** [1 zin]
+**Doel:** [1-2 zinnen leeruitkomsten]
 
-**Opdracht:** [2-3 zinnen wat te doen]
+**Opdracht:** [2-3 duidelijke stappen wat te doen]
 
 **Hints:**
 - [Hint 1]
 - [Hint 2]
+- [Hint 3]
 
-Focus op de CONCEPTS uit de code, niet op het fixen van bugs. Geen lange uitleg, alleen essentieel.`
-                : `Je bent een programmeerleraar. Maak een korte oefening voor ${difficulty} niveau over: "${topic}"
+Focus op de CONCEPTS uit de code. Geen lange uitleg, alleen essentieel en praktisch.`
+                : `Je bent een ervaren programmeerleraar. Maak een volledige, educatieve oefening voor ${difficulty} niveau over: "${topic}"
 
-Format exakt:
+Zorg voor:
+- Duidelijke leerdoelen
+- Praktische opdracht
+- Helpende hints
+- Code voorbeelden
+
+Format exact:
 ### 💻 Voorbeeld
 \`\`\`javascript
 // [code voorbeeld - 5 regels max]
@@ -113,15 +112,16 @@ Format exakt:
 ### 📝 Oefening
 **${topic}** - ${difficulty} niveau
 
-**Doel:** [1 zin]
+**Doel:** [1-2 zinnen leeruitkomsten]
 
-**Opdracht:** [2-3 zinnen wat te doen]
+**Opdracht:** [2-3 duidelijke stappen wat te doen]
 
 **Hints:**
 - [Hint 1]
 - [Hint 2]
+- [Hint 3]
 
-Geen lange uitleg, alleen essentieel.`;
+Geen lange uitleg, alleen essentieel en praktisch.`;
 
             const promptTokens = Math.ceil(basePrompt.length / 4);
             console.log(`[${timestamp}] [EXERCISE] Base prompt tokens: ~${promptTokens}`);
@@ -141,16 +141,20 @@ Geen lange uitleg, alleen essentieel.`;
             const response = await sendChatRequest(context.model, messages, token, stream);
 
             if (response) {
-                let responseLength = 0;
+                let exerciseContent = '';
                 for await (const fragment of response.text) {
                     stream.markdown(fragment);
-                    responseLength += fragment.length;
+                    exerciseContent += fragment;
                 }
 
                 const elapsed = Date.now() - startTime;
-                const responseTokens = Math.ceil(responseLength / 4);
-                console.log(`[${timestamp}] [EXERCISE] Response received in ${elapsed}ms, length: ${responseLength} chars (~${responseTokens} tokens)`);
+                const responseTokens = Math.ceil(exerciseContent.length / 4);
+                console.log(`[${timestamp}] [EXERCISE] Response received in ${elapsed}ms, length: ${exerciseContent.length} chars (~${responseTokens} tokens)`);
                 console.log(`[${timestamp}] [EXERCISE] Total tokens (request+response): ~${totalRequestTokens + responseTokens}`);
+
+                // Create a markdown file with the exercise
+                console.log(`[${timestamp}] [EXERCISE] Creating exercise file with content length: ${exerciseContent.length}`);
+                await this.createExerciseFile(exerciseContent, topic, difficulty);
 
                 stream.markdown(`\n\n💡 Vraag /feedback voor hulp!\n`);
             }
@@ -160,6 +164,93 @@ Geen lange uitleg, alleen essentieel.`;
             console.error(`[${timestamp}] [EXERCISE-ERROR] Failed to generate exercise:`, error);
             stream.markdown(`❌ Kon de oefening niet genereren. Probeer het opnieuw.\n`);
             context.trackProgress('exercise');
+        }
+    }
+
+    /**
+     * Create a markdown file with the exercise content
+     */
+    private async createExerciseFile(
+        content: string,
+        topic: string,
+        difficulty: string
+    ): Promise<void> {
+        try {
+            // Validate content
+            if (!content || content.trim().length === 0) {
+                console.warn('[EXERCISE] Empty content, skipping file creation');
+                return;
+            }
+
+            // Create exercises directory if it doesn't exist
+            if (!vscode.workspace.workspaceFolders) {
+                console.warn('[EXERCISE] No workspace folder open, skipping file creation');
+                return;
+            }
+
+            const exercisesDir = vscode.Uri.joinPath(vscode.workspace.workspaceFolders[0].uri, 'exercises');
+            console.log(`[EXERCISE] Creating exercises directory: ${exercisesDir.fsPath}`);
+
+            try {
+                await vscode.workspace.fs.stat(exercisesDir);
+                console.log('[EXERCISE] Exercises directory already exists');
+            } catch (e) {
+                console.log('[EXERCISE] Creating new exercises directory...');
+                await vscode.workspace.fs.createDirectory(exercisesDir);
+                console.log('[EXERCISE] Exercises directory created');
+            }
+
+            // Create a descriptive filename
+            const timestamp = new Date().toISOString().slice(0, 10);
+            const time = new Date().toISOString().slice(11, 19).replace(/:/g, '-');
+            const sanitizedTopic = (topic || 'oefening').replace(/[^a-z0-9]/gi, '_').slice(0, 30);
+            const fileName = `exercise_${sanitizedTopic}_${difficulty}_${timestamp}_${time}.md`;
+            const filePath = vscode.Uri.joinPath(exercisesDir, fileName);
+
+            console.log(`[EXERCISE] File path: ${filePath.fsPath}`);
+            console.log(`[EXERCISE] Topic: ${topic}, Difficulty: ${difficulty}`);
+            console.log(`[EXERCISE] Content length: ${content.length} characters`);
+
+            // Build the complete markdown content with header
+            const fullContent = `# 📝 Oefening: ${topic || 'Programmeren'}
+**Moeilijkheidsgraad:** ${difficulty}  
+**Datum:** ${new Date().toLocaleDateString('nl-NL')}
+
+---
+
+${content}
+
+---
+
+## 💭 Hulp
+- Vraag \`/hint\` voor hints
+- Vraag \`/feedback\` voor feedback op je code
+- Schakel tussen dit bestand en je code om te werken`;
+
+            // Write the file to disk
+            console.log('[EXERCISE] Writing file to disk...');
+            const encoder = new TextEncoder();
+            const encoded = encoder.encode(fullContent);
+            console.log(`[EXERCISE] Encoded size: ${encoded.length} bytes`);
+
+            await vscode.workspace.fs.writeFile(filePath, encoded);
+            console.log('[EXERCISE] File written successfully');
+
+            // Open the file in the editor
+            console.log('[EXERCISE] Opening file in editor...');
+            const doc = await vscode.workspace.openTextDocument(filePath);
+            await vscode.window.showTextDocument(doc, vscode.ViewColumn.Beside);
+            console.log(`[EXERCISE] Created and opened exercise file: ${fileName}`);
+
+            // Show success notification
+            vscode.window.showInformationMessage(`✅ Oefening opgeslagen: ${fileName}`);
+        } catch (error) {
+            console.error('[EXERCISE] Failed to create exercise file:', error);
+            if (error instanceof Error) {
+                console.error('[EXERCISE] Error details:', error.message);
+                console.error('[EXERCISE] Stack:', error.stack);
+            }
+            vscode.window.showErrorMessage(`❌ Kon oefening niet opslaan: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
