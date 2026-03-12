@@ -49,7 +49,7 @@
         "id": "codetutorv2.tutor",
         "name": "tutor",
         "fullName": "Code Tutor",
-        "description": "An AI-powered programming tutor that helps students learn to code with progressive feedback and interactive exercises",
+        "description": "An AI-powered tutor that helps students learn to code.",
         "isSticky": true,
         "commands": [
           {

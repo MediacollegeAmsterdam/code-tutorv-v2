@@ -113,7 +113,7 @@ export function createBasePrompt(yearLevel: number): string {
 
 /**
  * Build chat messages array with context history - OPTIMIZED
- * Only includes last 2 history items instead of all history
+ * Only includes last 5 history items instead of all history
  */
 export function buildChatMessages(
     basePrompt: string,
@@ -127,11 +127,11 @@ export function buildChatMessages(
     ];
     let totalTokens = Math.ceil(basePrompt.length / 4);
 
-    // OPTIMIZED: Only last 2 messages from history to reduce tokens
+    // OPTIMIZED: Only last 5 messages from history to reduce tokens
     const previousMessages = Array.isArray(chatContext?.history)
         ? chatContext.history
             .filter((h: any) => (vscode.ChatResponseTurn ? h instanceof vscode.ChatResponseTurn : false))
-            .slice(-2) // Only last 2 messages
+            .slice(-5) // Only last 5 messages
         : [];
 
     previousMessages.forEach((m, index) => {
@@ -163,7 +163,6 @@ export async function sendChatRequest(
     token: vscode.CancellationToken,
     stream: vscode.ChatResponseStream
 ): Promise<vscode.LanguageModelChatResponse | null> {
-    const startTime = Date.now();
 
     const trySend = async (m: vscode.LanguageModelChat) => {
         return m.sendRequest(messages, {}, token);
@@ -173,7 +172,6 @@ export async function sendChatRequest(
         return await trySend(model);
     } catch (err: any) {
         const msg = String(err?.message || '').toLowerCase();
-        const elapsed = Date.now() - startTime;
 
         const isAutoIssue = msg.includes('endpoint not found') || msg.includes('model auto');
         const isUnsupported = msg.includes('unsupported') ||
