@@ -223,7 +223,7 @@ ${content}
 ---
 
 ## 💭 Hulp
-- Vraag \`/hint\` voor hints
+- Vraag \`/ducky\` voor hints
 - Vraag \`/feedback\` voor feedback op je code
 - Schakel tussen dit bestand en je code om te werken`;
 
