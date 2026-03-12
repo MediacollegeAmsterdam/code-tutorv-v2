@@ -141,4 +141,3 @@ export class ChatContext {
 		return this.services.updateProgress(command);
 	}
 }
-
