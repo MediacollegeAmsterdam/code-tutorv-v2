@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import {ICommand} from '../core/ICommand';
 import {ChatContext} from '../core/ChatContext';
+import {buildChatMessages, sendChatRequest} from '../core/chat-utils';
 
 /**
  * Review Command - Structured exercise review with grading
@@ -135,9 +136,14 @@ export class ReviewCommand implements ICommand {
         console.log(`[${timestamp}] [REVIEW] Attempt: ${session.attempts}`);
 
         try {
-            const messages = [vscode.LanguageModelChatMessage.User(reviewPrompt)];
+            const messages = buildChatMessages(
+                reviewPrompt,
+                context.chatContext,
+                context.request.prompt,
+                ''
+            );
 
-            const response = await context.model.sendRequest(messages, {}, token);
+            const response = await sendChatRequest(context.model, messages, token, stream);
 
             if (response) {
                 let reviewText = '';
@@ -147,18 +153,20 @@ export class ReviewCommand implements ICommand {
                 for await (const fragment of response.text) {
                     if (charCount + fragment.length > maxChars) {
                         reviewText += fragment.substring(0, maxChars - charCount) + '\n\n[...]';
+                        stream.markdown(fragment.substring(0, maxChars - charCount) + '\n\n[...]');
                         break;
                     }
                     reviewText += fragment;
                     charCount += fragment.length;
+                    stream.markdown(fragment);
                 }
 
-                stream.markdown(reviewText);
                 session.previousReviews.push(reviewText);
 
                 console.log(`[${timestamp}] [REVIEW] Review completed, length: ${reviewText.length} chars`);
             } else {
                 stream.markdown('❌ Kon beoordeling niet genereren.\n');
+                console.error(`[${timestamp}] [REVIEW] No response received from model`);
             }
         } catch (error) {
             console.error(`[${timestamp}] [REVIEW] Error generating review:`, error);
